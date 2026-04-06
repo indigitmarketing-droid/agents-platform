@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "setting.call_started": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" }
+      },
+      "required": ["lead_id"]
+    },
+    "setting.call_accepted": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "lead": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "email": { "type": "string" }
+          },
+          "required": ["name", "phone"]
+        }
+      },
+      "required": ["lead_id", "lead"]
+    },
+    "setting.call_rejected": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "reason": { "type": "string" }
+      },
+      "required": ["lead_id"]
+    },
+    "setting.followup_scheduled": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "channel": { "type": "string", "enum": ["whatsapp", "phone", "email"] },
+        "scheduled_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["lead_id", "channel", "scheduled_at"]
+    },
+    "setting.sale_completed": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "amount": { "type": "number" }
+      },
+      "required": ["lead_id", "amount"]
+    },
+    "setting.sale_failed": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "reason": { "type": "string" }
+      },
+      "required": ["lead_id"]
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "builder.build_started": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" }
+      },
+      "required": ["lead_id"]
+    },
+    "builder.website_ready": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "site_url": { "type": "string", "format": "uri" }
+      },
+      "required": ["lead_id", "site_url"]
+    },
+    "builder.blog_published": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "blog_url": { "type": "string", "format": "uri" }
+      },
+      "required": ["lead_id", "blog_url"]
+    }
+  }
+}

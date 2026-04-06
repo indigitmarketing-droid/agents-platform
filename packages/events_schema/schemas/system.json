@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "system.agent_online": {
+      "type": "object",
+      "properties": {
+        "agent_id": { "type": "string" }
+      },
+      "required": ["agent_id"]
+    },
+    "system.agent_offline": {
+      "type": "object",
+      "properties": {
+        "agent_id": { "type": "string" }
+      },
+      "required": ["agent_id"]
+    },
+    "system.error": {
+      "type": "object",
+      "properties": {
+        "agent_id": { "type": "string" },
+        "error": { "type": "string" },
+        "event_id": { "type": "string" }
+      },
+      "required": ["agent_id", "error"]
+    }
+  }
+}

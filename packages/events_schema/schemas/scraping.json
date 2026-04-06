@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "scraping.trigger": {
+      "type": "object",
+      "properties": {
+        "region": { "type": "string" },
+        "batch_size": { "type": "integer", "default": 10 }
+      }
+    },
+    "scraping.started": {
+      "type": "object",
+      "properties": {
+        "batch_id": { "type": "string" }
+      },
+      "required": ["batch_id"]
+    },
+    "scraping.lead_found": {
+      "type": "object",
+      "properties": {
+        "lead": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "email": { "type": "string" },
+            "source": { "type": "string" }
+          },
+          "required": ["name", "phone", "source"]
+        }
+      },
+      "required": ["lead"]
+    },
+    "scraping.batch_completed": {
+      "type": "object",
+      "properties": {
+        "total_found": { "type": "integer" },
+        "batch_id": { "type": "string" }
+      },
+      "required": ["total_found", "batch_id"]
+    }
+  }
+}
