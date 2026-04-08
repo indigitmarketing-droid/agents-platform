@@ -9,6 +9,7 @@ from packages.agent_framework.supabase_client import create_supabase_client
 logger = logging.getLogger(__name__)
 ACCEPTANCE_RATE = 0.6
 
+
 class SettingStubAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(agent_id="setting", **kwargs)
@@ -25,17 +26,26 @@ class SettingStubAgent(BaseAgent):
 
     async def _handle_lead_found(self, event: dict) -> list[dict]:
         lead = event["payload"]["lead"]
-        lead_id = str(uuid.uuid4())[:8]
+        lead_id = event["payload"].get("lead_id", str(uuid.uuid4())[:8])
         lead_name = lead.get("name", "Unknown")
+
+        # Update lead status to 'contacted'
+        self._client.table("leads").update({"status": "contacted"}).eq("id", lead_id).execute()
+
         new_events = []
         new_events.append({"type": "setting.call_started", "target_agent": None, "payload": {"lead_id": lead_id}})
         await asyncio.sleep(random.uniform(1.0, 2.0))
+
         if random.random() < ACCEPTANCE_RATE:
             logger.info(f"Lead {lead_name} ACCEPTED the proposal")
+            # Update lead status to 'accepted'
+            self._client.table("leads").update({"status": "accepted"}).eq("id", lead_id).execute()
             new_events.append({"type": "setting.call_accepted", "target_agent": "builder", "payload": {"lead_id": lead_id, "lead": lead}})
         else:
             reason = random.choice(["Non interessato", "Ha già un sito", "Richiamami più tardi", "Numero non raggiungibile"])
             logger.info(f"Lead {lead_name} REJECTED: {reason}")
+            # Update lead status to 'rejected'
+            self._client.table("leads").update({"status": "rejected"}).eq("id", lead_id).execute()
             new_events.append({"type": "setting.call_rejected", "target_agent": None, "payload": {"lead_id": lead_id, "reason": reason}})
         return new_events
 
@@ -51,6 +61,7 @@ class SettingStubAgent(BaseAgent):
             logger.info(f"Sale failed for lead {lead_id}")
             new_events.append({"type": "setting.sale_failed", "target_agent": None, "payload": {"lead_id": lead_id, "reason": "Il cliente ha cambiato idea"}})
         return new_events
+
 
 async def main():
     load_dotenv()

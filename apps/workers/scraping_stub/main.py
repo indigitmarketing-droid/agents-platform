@@ -21,6 +21,7 @@ FAKE_COMPANIES = [
     ("Gelateria Dolce Vita", "+39 081 9876543", "dolcevita@email.com"),
 ]
 
+
 class ScrapingStubAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(agent_id="scraping", **kwargs)
@@ -41,10 +42,27 @@ class ScrapingStubAgent(BaseAgent):
 
         for name, phone, email in selected:
             await asyncio.sleep(random.uniform(0.5, 1.5))
+
+            # Save lead to database
+            lead_row = {
+                "company_name": name,
+                "phone": phone,
+                "email": email,
+                "has_website": False,
+                "status": "new",
+                "source": "stub_scraper",
+            }
+            result = self._client.table("leads").insert(lead_row).execute()
+            lead_db_id = result.data[0]["id"] if result.data else str(uuid.uuid4())
+            logger.info(f"Saved lead to DB: {name} (id: {lead_db_id})")
+
             new_events.append({
                 "type": "scraping.lead_found",
                 "target_agent": "setting",
-                "payload": {"lead": {"name": name, "phone": phone, "email": email, "source": "stub_scraper"}},
+                "payload": {
+                    "lead_id": lead_db_id,
+                    "lead": {"name": name, "phone": phone, "email": email, "source": "stub_scraper"},
+                },
             })
             logger.info(f"Found lead: {name}")
 
@@ -54,6 +72,7 @@ class ScrapingStubAgent(BaseAgent):
             "payload": {"total_found": len(selected), "batch_id": batch_id},
         })
         return new_events
+
 
 async def main():
     load_dotenv()
