@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 from packages.agent_framework.base_agent import BaseAgent
 
 class StubAgent(BaseAgent):
@@ -28,11 +28,11 @@ async def test_process_event_emits_results():
     mock_client = MagicMock()
     table = MagicMock()
     insert = MagicMock()
-    insert.execute = AsyncMock(return_value=MagicMock(data=[{"id": "new-uuid"}]))
+    insert.execute = MagicMock(return_value=MagicMock(data=[{"id": "new-uuid"}]))
     table.insert.return_value = insert
     update_chain = MagicMock()
     update_chain.eq.return_value = update_chain
-    update_chain.execute = AsyncMock()
+    update_chain.execute = MagicMock()
     table.update.return_value = update_chain
     mock_client.table.return_value = table
 
