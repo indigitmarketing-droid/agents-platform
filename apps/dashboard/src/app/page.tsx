@@ -10,6 +10,7 @@ import { SalesChart } from "@/components/SalesChart";
 import { RevenueSummary } from "@/components/RevenueSummary";
 import { PipelineStatus } from "@/components/PipelineStatus";
 import { QuickActions } from "@/components/QuickActions";
+import { NavTabs } from "@/components/scraping/NavTabs";
 import { useRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { useAgentStatus } from "@/hooks/useAgentStatus";
 
@@ -23,7 +24,8 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header agentCount={onlineAgents} isConnected={isConnected} />
-      <div className="grid grid-cols-[1fr_380px] min-h-[calc(100vh-69px)]">
+      <NavTabs />
+      <div className="grid grid-cols-[1fr_380px] min-h-[calc(100vh-119px)]">
         <div className="p-6 space-y-6 overflow-y-auto">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[1.2px] text-accent mb-4">Overview</div>
