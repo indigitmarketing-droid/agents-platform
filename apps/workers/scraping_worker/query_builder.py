@@ -14,7 +14,7 @@ def build_no_website_query(
     """
     return (
         f"[out:json][timeout:{timeout_seconds}];"
-        f'area["name"="{city}"]["place"="city"]->.searchArea;'
+        f'area["name"="{city}"]->.searchArea;'
         f"("
         f'node["{category_type}"="{category}"][!"website"]["phone"](area.searchArea);'
         f");"

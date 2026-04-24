@@ -55,7 +55,8 @@ class OverpassClient:
     async def _try_endpoint(
         self, endpoint: str, ql_query: str, max_retries: int
     ) -> list[dict]:
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
+        headers = {"User-Agent": "agents-platform/0.1 (indigit.marketing@gmail.com)"}
+        async with httpx.AsyncClient(timeout=self._timeout, headers=headers) as client:
             for attempt in range(max_retries):
                 response = await client.post(endpoint, data={"data": ql_query})
                 if response.status_code == 200:
