@@ -38,6 +38,13 @@
         "batch_id": { "type": "string" }
       },
       "required": ["total_found", "batch_id"]
+    },
+    "scraping.run_target": {
+      "type": "object",
+      "properties": {
+        "target_id": { "type": "string" }
+      },
+      "required": ["target_id"]
     }
   }
 }

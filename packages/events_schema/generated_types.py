@@ -10,6 +10,7 @@ class EventTypes:
     BUILDER_WEBSITE_READY = "builder.website_ready"
     SCRAPING_BATCH_COMPLETED = "scraping.batch_completed"
     SCRAPING_LEAD_FOUND = "scraping.lead_found"
+    SCRAPING_RUN_TARGET = "scraping.run_target"
     SCRAPING_STARTED = "scraping.started"
     SCRAPING_TRIGGER = "scraping.trigger"
     SETTING_CALL_ACCEPTED = "setting.call_accepted"
@@ -44,6 +45,10 @@ class ScrapingBatchCompletedPayload(BaseModel):
 
 class ScrapingLeadFoundPayload(BaseModel):
     lead: dict
+
+
+class ScrapingRunTargetPayload(BaseModel):
+    target_id: str
 
 
 class ScrapingStartedPayload(BaseModel):

@@ -6,6 +6,7 @@ export const EventTypes = {
   BUILDER_WEBSITE_READY: "builder.website_ready" as const,
   SCRAPING_BATCH_COMPLETED: "scraping.batch_completed" as const,
   SCRAPING_LEAD_FOUND: "scraping.lead_found" as const,
+  SCRAPING_RUN_TARGET: "scraping.run_target" as const,
   SCRAPING_STARTED: "scraping.started" as const,
   SCRAPING_TRIGGER: "scraping.trigger" as const,
   SETTING_CALL_ACCEPTED: "setting.call_accepted" as const,
@@ -42,6 +43,10 @@ export interface ScrapingBatchCompletedPayload {
 
 export interface ScrapingLeadFoundPayload {
   lead: Record<string, unknown>;
+}
+
+export interface ScrapingRunTargetPayload {
+  target_id: string;
 }
 
 export interface ScrapingStartedPayload {
