@@ -1,20 +1,25 @@
 import type { SiteContent } from "@/types/site";
 import { Hero } from "@/components/primitives/Hero";
-import { About } from "@/components/primitives/About";
+import { Problem } from "@/components/primitives/Problem";
+import { Benefits } from "@/components/primitives/Benefits";
+import { Solution } from "@/components/primitives/Solution";
 import { ServicesList } from "@/components/primitives/ServicesList";
-import { ContactBlock } from "@/components/primitives/ContactBlock";
+import { ContactForm } from "@/components/primitives/ContactForm";
 
 interface Props {
   content: SiteContent;
+  siteId: string;
 }
 
-export function ServiceTemplate({ content }: Props) {
+export function ServiceTemplate({ content, siteId }: Props) {
   return (
     <>
       <Hero {...(content.hero ?? {})} variant="centered-text" />
-      <About {...(content.about ?? {})} />
+      <Problem {...(content.problem ?? {})} />
+      <Benefits {...(content.benefits ?? {})} />
+      <Solution {...(content.solution ?? {})} />
       <ServicesList items={content.services} variant="list-with-prices" />
-      <ContactBlock {...(content.contacts ?? {})} variant="form" />
+      <ContactForm {...(content.contacts ?? {})} siteId={siteId} />
     </>
   );
 }

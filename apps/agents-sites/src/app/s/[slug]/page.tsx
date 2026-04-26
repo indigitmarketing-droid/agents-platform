@@ -6,7 +6,7 @@ import { HospitalityTemplate } from "@/components/templates/HospitalityTemplate"
 import { ServiceTemplate } from "@/components/templates/ServiceTemplate";
 import { GenericTemplate } from "@/components/templates/GenericTemplate";
 
-const TEMPLATES: Record<TemplateKind, React.FC<{ content: Site["content"] }>> = {
+const TEMPLATES: Record<TemplateKind, React.FC<{ content: Site["content"]; siteId: string }>> = {
   hospitality: HospitalityTemplate,
   service: ServiceTemplate,
   generic: GenericTemplate,
@@ -49,7 +49,7 @@ export default async function SitePage({
         minHeight: "100vh",
       }}
     >
-      <Template content={site.content} />
+      <Template content={site.content} siteId={site.id} />
     </main>
   );
 }
