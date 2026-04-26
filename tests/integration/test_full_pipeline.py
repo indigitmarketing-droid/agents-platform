@@ -2,8 +2,11 @@
 Integration test: verifies the full event pipeline with stub agents.
 Simulates the complete flow without a real Supabase instance.
 """
+import os
 import pytest
 from unittest.mock import MagicMock
+
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-key-for-tests")
 
 from apps.workers.scraping_worker.main import ScrapingAgent as ScrapingStubAgent
 
