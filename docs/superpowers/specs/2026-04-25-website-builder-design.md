@@ -1,8 +1,10 @@
 # Sub-progetto C — Website Builder Agent (Reale)
 
-**Data**: 2026-04-25
-**Stato**: Approvato
+**Data**: 2026-04-25 (v1) → 2026-04-26 (v2 — premium + lead capture)
+**Stato**: v1 approvato e deployato. v2 (sezione 12) approvata, pending implementation.
 **Scope**: Sostituire `builder_stub` con un agente reale che genera siti web personalizzati per i lead accettati dal Setting Agent. I siti vengono renderizzati dinamicamente da un nuovo progetto Next.js (`agents-sites`) leggendo i dati da Supabase.
+
+**v2 add**: i siti devono essere ULTRA PREMIUM, struttura Problema/Beneficio/Soluzione, e i form di contatto devono inviare i lead all'email del cliente proprietario del sito.
 
 ---
 
@@ -654,3 +656,189 @@ python-slugify>=8.0
 - **Analytics visite**: non in C, nemmeno tracking lato server. Sub-progetto E aggiungerà counter visite (Plausible o Vercel Analytics)
 - **Re-generation**: se l'utente vuole un sito diverso, oggi va eliminato manualmente da DB e ritrigerato l'evento. Re-gen dalla dashboard → futuro
 - **A/B testing template**: non disponibile, ogni lead ottiene una sola generazione
+
+---
+
+## 12. v2 — Premium copy + Lead capture (richiesta utente 2026-04-26)
+
+Questa sezione estende lo scope della v1 con 3 nuovi requisiti dichiarati dall'utente:
+
+### 12.1 Sito ULTRA PREMIUM
+
+I siti generati devono comunicare **valore alto, autorità, professionalità**. Non possono sembrare "templatati" o generici. Il design deve trasmettere "questi sono professionisti che valgono il prezzo".
+
+**Implementazione**:
+- **Tipografia premium**: usare font Google sans-serif moderni (Inter per UI, Playfair Display o Fraunces per heading di brand)
+- **Spacing generoso**: padding verticale 80-128px tra sezioni, max-width contenuto 1200px
+- **Animazioni soft on-scroll**: fade-in + translate-y leggero quando le sezioni entrano in viewport (Intersection Observer)
+- **Gradient overlay sui hero** invece di colori piatti (quando ha image_url)
+- **Hover states su CTA**: scale 1.02 + shadow espansa
+- **Micro-elementi premium**: divider sottili, icon set coerente (lucide-react), badge "trusted by..." se applicabile
+- **Dark mode-ready** (anche se non attivato di default — palette già supportano accent contrastante)
+
+**Vincolo**: nessun template "stockphoto-heavy" o "Wix-vibes". Stile più vicino a Linear, Stripe, Apple-product-page.
+
+### 12.2 Struttura Problema → Beneficio → Soluzione
+
+Il copy generato da Claude deve seguire un framework di conversione esplicito invece di "About generico":
+
+**Schema content v2** (sostituisce le sezioni "about" generiche):
+
+```json
+{
+  "hero": {
+    "headline": "string (promessa di valore in 1 riga)",
+    "subheadline": "string (chiarimento + per chi è)",
+    "cta_text": "string (azione, es. 'Richiedi un preventivo')",
+    "cta_link": "#contact (anchor al form)",
+    "image_url": "string"
+  },
+  "problem": {
+    "title": "string (es. 'Il problema che risolviamo')",
+    "body": "string (descrizione del pain point del visitatore)",
+    "bullets": ["pain1", "pain2", "pain3"]
+  },
+  "benefits": {
+    "title": "string (es. 'Cosa ottieni')",
+    "items": [
+      {"title": "Beneficio 1", "description": "string", "icon": "string opzionale"},
+      {"title": "Beneficio 2", "description": "string"},
+      {"title": "Beneficio 3", "description": "string"}
+    ]
+  },
+  "solution": {
+    "title": "string (es. 'Come funziona')",
+    "body": "string (la soluzione: chi siamo / cosa offriamo concretamente)",
+    "cta_text": "string (es. 'Inizia ora')",
+    "cta_link": "#contact"
+  },
+  "services": [...],            // come v1, opzionale
+  "contacts": {                  // METADATA, NON form fields
+    "phone": "...",
+    "address": "...",
+    "opening_hours": "..."
+  }
+}
+```
+
+**Prompt Claude v2**: include il framework PBS esplicitamente:
+```
+Genera testi italiani per un sito web seguendo il framework Problema → Beneficio → Soluzione.
+
+PROBLEMA: identifica il pain point principale del cliente target di {category}.
+BENEFICI: 3 risultati concreti che ottengono lavorando con {company_name}.
+SOLUZIONE: come {company_name} risolve il problema in modo unico.
+
+Tono: professionale, sicuro, orientato alla conversione. Niente "Chi siamo" generico.
+Ogni CTA deve linkare a "#contact" (anchor del form).
+```
+
+### 12.3 Form di contatto reale → email del cliente
+
+Il `ContactBlock` non è più solo "display di telefono/email" ma include un **form HTML reale** che inoltra le submissions all'**email del lead proprietario del sito**.
+
+**Architettura form submission**:
+
+```
+Visitatore del sito (es. cerca pizzeria a Milano)
+  └─> compila form su https://agents-sites.vercel.app/s/pizzeria-mario
+        └─> POST /api/contact-form { site_id, name, message, contact }
+              └─> Server-side:
+                    1. Recupera site → lead_id → leads.email (il PROPRIETARIO)
+                    2. Salva submission in tabella `site_submissions`
+                    3. Invia email a leads.email con il messaggio
+                    4. Emette evento `site.lead_received` (per dashboard analytics)
+              └─> Risposta {ok: true} → form mostra "Grazie, ti ricontatteremo"
+```
+
+**Nuova tabella `site_submissions`**:
+```sql
+CREATE TABLE site_submissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    site_id UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+    visitor_name TEXT,
+    visitor_email TEXT,
+    visitor_phone TEXT,
+    message TEXT NOT NULL,
+    forwarded_to_email TEXT NOT NULL,  -- email del cliente
+    forwarded_at TIMESTAMPTZ,
+    forward_error TEXT,                 -- se invio fallito
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_submissions_site ON site_submissions(site_id, created_at DESC);
+```
+
+**Servizio email**: usiamo **Resend** (resend.com) — free tier 3000 email/mese, integrazione Next.js semplice. Alternative: SendGrid, Postmark.
+
+**Nuovo API route `apps/agents-sites/src/app/api/contact-form/route.ts`**:
+- POST riceve `{site_id, visitor_name, visitor_email, visitor_phone, message}`
+- Carica `site` da DB → segue `lead_id` → carica `leads.email`
+- Se `leads.email` mancante → invia a fallback admin email + log warning
+- Invia email tramite Resend al proprietario, con corpo formattato:
+  ```
+  Subject: [{site_name}] Nuovo contatto da: {visitor_name}
+  Body:
+    Nome: {visitor_name}
+    Email: {visitor_email}
+    Telefono: {visitor_phone}
+    
+    Messaggio:
+    {message}
+    
+    --
+    Inviato da {published_url}
+  ```
+- INSERT in `site_submissions`
+- Emette `site.lead_received` (per metriche dashboard)
+
+**Edge case lead.email mancante**: durante OSM scraping molti lead non hanno `email`. Quando un lead accetta in chiamata (Sub-progetto D), il Setting Agent **deve raccogliere e salvare l'email del cliente**. Se non c'è → fallback a un'email admin (la nostra) + warning.
+
+### 12.4 Modifiche ai template (rendering side)
+
+I 3 template (`HospitalityTemplate`, `ServiceTemplate`, `GenericTemplate`) ricevono nuove primitive:
+- **Problem**: section con titolo + body + bullets (con icon ❌ o "•")
+- **Benefits**: grid di card (3-4 colonne desktop, 1 mobile) con icon + title + description
+- **Solution**: section narrativa + CTA prominente
+- **ContactForm** (sostituisce `ContactBlock` con form vero): input name/email/phone/message + submit
+
+Tutti i CTA in hero, solution, e header (se aggiunto) puntano a `#contact` → smooth-scroll alla section form.
+
+### 12.5 Nuove dipendenze
+
+**Next.js (agents-sites)**:
+- `resend` (npm) — email API
+- `react-hook-form` + `zod` — form validation lato client
+
+**Env vars nuove (Vercel agents-sites prod)**:
+- `RESEND_API_KEY` — da resend.com (signup necessario)
+- `FROM_EMAIL` — es. `noreply@agentsplatform.app` (o un indirizzo Resend gratuito tipo `onboarding@resend.dev` per MVP)
+- `ADMIN_FALLBACK_EMAIL` — se lead.email mancante
+
+### 12.6 Test aggiuntivi v2
+
+| Test | Cosa verifica |
+|---|---|
+| `test_copy_generator_v2.py` | Output Claude include problem/benefits/solution con bullets |
+| `apps/agents-sites/src/app/api/contact-form/route.test.ts` | Lookup site→lead→email, invio Resend mockato, INSERT submission |
+| `ContactForm.test.tsx` | Render form, validation, success/error states |
+
+### 12.7 Migration v2
+
+```sql
+-- 005_site_submissions.sql
+CREATE TABLE site_submissions (...);
+CREATE INDEX ...;
+ALTER PUBLICATION supabase_realtime ADD TABLE site_submissions;
+```
+
+E un seed update (opzionale): per i siti già generati con content v1 (schema "about" only), Claude può rigenerare il content nella v2 quando l'utente lo decide. Per ora si convive: se `content.problem` esiste → render v2, sennò → render v1.
+
+### 12.8 Riepilogo cambiamenti vs v1
+
+| Aspetto | v1 | v2 |
+|---|---|---|
+| Copy structure | Hero + Services + About + Contacts | Hero + Problem + Benefits + Solution + Services (opt) + Contacts |
+| ContactBlock | Display info | Form HTML reale |
+| Form submissions | N/A | Salvate in `site_submissions`, inviate a `lead.email` via Resend |
+| Premium look | Standard Tailwind | Tipografia + animazioni + spacing generoso |
+| Schema events | Stesso v1 | + `site.lead_received` quando arriva una submission |
