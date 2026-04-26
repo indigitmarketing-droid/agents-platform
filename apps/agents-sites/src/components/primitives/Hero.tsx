@@ -8,31 +8,35 @@ export function Hero({
   headline,
   subheadline,
   cta_text,
+  cta_link,
   image_url,
   variant = "centered-text",
 }: HeroProps) {
   if (!headline) return null;
 
+  const ctaHref = cta_link ?? "#contact";
+
   if (variant === "image-bg" && image_url) {
     return (
       <section
-        className="relative min-h-[60vh] flex items-center justify-center text-white"
+        className="relative min-h-[80vh] flex items-center justify-center text-white overflow-hidden"
         style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${image_url})`,
+          backgroundImage: `linear-gradient(135deg, rgba(0,0,0,0.65), rgba(0,0,0,0.4)), url(${image_url})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="text-center max-w-2xl px-6">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">{headline}</h1>
-          {subheadline && <p className="text-lg sm:text-xl mb-6">{subheadline}</p>}
+        <div className="text-center max-w-3xl px-6 section-fade-in">
+          <h1 className="font-display text-5xl sm:text-7xl font-bold mb-6 leading-tight">{headline}</h1>
+          {subheadline && <p className="text-xl sm:text-2xl mb-10 opacity-95 max-w-2xl mx-auto leading-relaxed">{subheadline}</p>}
           {cta_text && (
-            <button
-              className="px-6 py-3 rounded-md font-semibold"
+            <a
+              href={ctaHref}
+              className="cta-btn inline-block px-8 py-4 rounded-lg font-semibold text-lg"
               style={{ backgroundColor: "var(--site-primary)", color: "white" }}
             >
               {cta_text}
-            </button>
+            </a>
           )}
         </div>
       </section>
@@ -40,22 +44,25 @@ export function Hero({
   }
 
   return (
-    <section className="min-h-[50vh] flex items-center justify-center px-6 py-12">
-      <div className="text-center max-w-2xl">
-        <h1
-          className="text-4xl sm:text-5xl font-bold mb-4"
-          style={{ color: "var(--site-primary)" }}
-        >
+    <section
+      className="relative min-h-[70vh] flex items-center justify-center px-6 py-24 overflow-hidden"
+      style={{
+        background: `linear-gradient(180deg, var(--site-bg) 0%, color-mix(in srgb, var(--site-accent) 8%, var(--site-bg)) 100%)`,
+      }}
+    >
+      <div className="text-center max-w-3xl section-fade-in">
+        <h1 className="font-display text-5xl sm:text-7xl font-bold mb-6 leading-tight" style={{ color: "var(--site-primary)" }}>
           {headline}
         </h1>
-        {subheadline && <p className="text-lg sm:text-xl mb-6 opacity-80">{subheadline}</p>}
+        {subheadline && <p className="text-xl sm:text-2xl mb-10 opacity-80 leading-relaxed">{subheadline}</p>}
         {cta_text && (
-          <button
-            className="px-6 py-3 rounded-md font-semibold"
+          <a
+            href={ctaHref}
+            className="cta-btn inline-block px-8 py-4 rounded-lg font-semibold text-lg"
             style={{ backgroundColor: "var(--site-primary)", color: "white" }}
           >
             {cta_text}
-          </button>
+          </a>
         )}
       </div>
     </section>
