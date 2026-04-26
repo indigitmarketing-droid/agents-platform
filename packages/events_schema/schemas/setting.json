@@ -17,9 +17,21 @@
           "properties": {
             "name": { "type": "string" },
             "phone": { "type": "string" },
-            "email": { "type": "string" }
+            "email": { "type": "string" },
+            "category": { "type": "string" },
+            "city": { "type": "string" }
           },
           "required": ["name", "phone"]
+        },
+        "call_brief": {
+          "type": "object",
+          "properties": {
+            "custom_requests": { "type": "string" },
+            "services": { "type": "array", "items": {"type": "string"} },
+            "target_audience": { "type": "string" },
+            "style_preference": { "type": "string" },
+            "opening_hours": { "type": "string" }
+          }
         }
       },
       "required": ["lead_id", "lead"]

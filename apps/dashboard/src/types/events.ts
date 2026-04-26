@@ -61,6 +61,7 @@ export interface ScrapingTriggerPayload {
 export interface SettingCallAcceptedPayload {
   lead_id: string;
   lead: Record<string, unknown>;
+  call_brief?: Record<string, unknown>;
 }
 
 export interface SettingCallRejectedPayload {

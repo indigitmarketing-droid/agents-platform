@@ -63,6 +63,7 @@ class ScrapingTriggerPayload(BaseModel):
 class SettingCallAcceptedPayload(BaseModel):
     lead_id: str
     lead: dict
+    call_brief: Optional[dict] = None
 
 
 class SettingCallRejectedPayload(BaseModel):
