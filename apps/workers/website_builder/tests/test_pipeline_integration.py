@@ -46,9 +46,11 @@ def make_full_mock_claude():
     }))]
     content = MagicMock()
     content.content = [MagicMock(text=json.dumps({
-        "hero": {"headline": "Bella Pizza", "subheadline": "Tradizione", "cta_text": "Prenota", "image_url": "https://images.unsplash.com/photo-1"},
+        "hero": {"headline": "Bella Pizza", "subheadline": "Tradizione", "cta_text": "Prenota", "cta_link": "#contact", "image_url": "https://images.unsplash.com/photo-1"},
+        "problem": {"title": "Il problema", "body": "B", "bullets": ["x"]},
+        "benefits": {"title": "Vantaggi", "items": [{"title": "a", "description": "b"}]},
+        "solution": {"title": "Come", "body": "B", "cta_text": "Vai", "cta_link": "#contact"},
         "services": [{"title": "Pizza al taglio", "description": "Veloce e buona"}],
-        "about": {"title": "La storia", "body": "Da tre generazioni"},
         "contacts": {"phone": "+39028373248", "email": None, "address": "Via Roma", "opening_hours": "12-23"},
     }))]
     client.messages.create = MagicMock(side_effect=[palette, content])

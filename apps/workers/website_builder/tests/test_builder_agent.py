@@ -14,9 +14,11 @@ SAMPLE_LEAD = {
 }
 
 SAMPLE_CONTENT = {
-    "hero": {"headline": "Pizza", "subheadline": "Buona", "cta_text": "Vieni", "image_url": "https://images.unsplash.com/x"},
+    "hero": {"headline": "Pizza", "subheadline": "Buona", "cta_text": "Vieni", "cta_link": "#contact", "image_url": "https://images.unsplash.com/x"},
+    "problem": {"title": "Il problema", "body": "Trovare qualità è difficile.", "bullets": ["Ingredienti scadenti"]},
+    "benefits": {"title": "Cosa ottieni", "items": [{"title": "Qualità", "description": "Ingredienti freschi"}]},
+    "solution": {"title": "Come lavoriamo", "body": "Pizza artigianale.", "cta_text": "Prenota", "cta_link": "#contact"},
     "services": [{"title": "Pizza", "description": "Buona"}],
-    "about": {"title": "About", "body": "Storia"},
     "contacts": {"phone": "+39028373248"},
 }
 
