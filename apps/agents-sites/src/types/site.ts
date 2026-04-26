@@ -9,7 +9,32 @@ export interface HeroContent {
   headline?: string;
   subheadline?: string;
   cta_text?: string;
+  cta_link?: string;
   image_url?: string;
+}
+
+export interface ProblemContent {
+  title?: string;
+  body?: string;
+  bullets?: string[];
+}
+
+export interface BenefitItem {
+  title?: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface BenefitsContent {
+  title?: string;
+  items?: BenefitItem[];
+}
+
+export interface SolutionContent {
+  title?: string;
+  body?: string;
+  cta_text?: string;
+  cta_link?: string;
 }
 
 export interface ServiceItem {
@@ -32,6 +57,9 @@ export interface ContactsContent {
 
 export interface SiteContent {
   hero?: HeroContent;
+  problem?: ProblemContent;
+  benefits?: BenefitsContent;
+  solution?: SolutionContent;
   services?: ServiceItem[];
   about?: AboutContent;
   contacts?: ContactsContent;
