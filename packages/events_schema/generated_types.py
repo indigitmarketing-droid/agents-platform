@@ -14,8 +14,12 @@ class EventTypes:
     SCRAPING_STARTED = "scraping.started"
     SCRAPING_TRIGGER = "scraping.trigger"
     SETTING_CALL_ACCEPTED = "setting.call_accepted"
+    SETTING_CALL_COMPLETED = "setting.call_completed"
+    SETTING_CALL_FAILED = "setting.call_failed"
+    SETTING_CALL_INITIATED = "setting.call_initiated"
     SETTING_CALL_REJECTED = "setting.call_rejected"
     SETTING_CALL_STARTED = "setting.call_started"
+    SETTING_CALL_UNCLEAR = "setting.call_unclear"
     SETTING_FOLLOWUP_SCHEDULED = "setting.followup_scheduled"
     SETTING_SALE_COMPLETED = "setting.sale_completed"
     SETTING_SALE_FAILED = "setting.sale_failed"
@@ -66,6 +70,26 @@ class SettingCallAcceptedPayload(BaseModel):
     call_brief: Optional[dict] = None
 
 
+class SettingCallCompletedPayload(BaseModel):
+    lead_id: str
+    conversation_id: str
+    transcript: str
+    duration_seconds: Optional[int] = None
+    audio_url: Optional[str] = None
+
+
+class SettingCallFailedPayload(BaseModel):
+    lead_id: str
+    reason: str
+    call_sid: Optional[str] = None
+
+
+class SettingCallInitiatedPayload(BaseModel):
+    lead_id: str
+    call_sid: str
+    call_type: str
+
+
 class SettingCallRejectedPayload(BaseModel):
     lead_id: str
     reason: Optional[str] = None
@@ -73,6 +97,11 @@ class SettingCallRejectedPayload(BaseModel):
 
 class SettingCallStartedPayload(BaseModel):
     lead_id: str
+
+
+class SettingCallUnclearPayload(BaseModel):
+    lead_id: str
+    transcript_excerpt: Optional[str] = None
 
 
 class SettingFollowupScheduledPayload(BaseModel):

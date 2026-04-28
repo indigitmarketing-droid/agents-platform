@@ -68,6 +68,43 @@
         "reason": { "type": "string" }
       },
       "required": ["lead_id"]
+    },
+    "setting.call_initiated": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "call_sid": { "type": "string" },
+        "call_type": { "type": "string", "enum": ["cold_call", "site_ready_call"] }
+      },
+      "required": ["lead_id", "call_sid", "call_type"]
+    },
+    "setting.call_completed": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "conversation_id": { "type": "string" },
+        "transcript": { "type": "string" },
+        "duration_seconds": { "type": "integer" },
+        "audio_url": { "type": "string" }
+      },
+      "required": ["lead_id", "conversation_id", "transcript"]
+    },
+    "setting.call_failed": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "reason": { "type": "string" },
+        "call_sid": { "type": "string" }
+      },
+      "required": ["lead_id", "reason"]
+    },
+    "setting.call_unclear": {
+      "type": "object",
+      "properties": {
+        "lead_id": { "type": "string" },
+        "transcript_excerpt": { "type": "string" }
+      },
+      "required": ["lead_id"]
     }
   }
 }

@@ -10,8 +10,12 @@ export const EventTypes = {
   SCRAPING_STARTED: "scraping.started" as const,
   SCRAPING_TRIGGER: "scraping.trigger" as const,
   SETTING_CALL_ACCEPTED: "setting.call_accepted" as const,
+  SETTING_CALL_COMPLETED: "setting.call_completed" as const,
+  SETTING_CALL_FAILED: "setting.call_failed" as const,
+  SETTING_CALL_INITIATED: "setting.call_initiated" as const,
   SETTING_CALL_REJECTED: "setting.call_rejected" as const,
   SETTING_CALL_STARTED: "setting.call_started" as const,
+  SETTING_CALL_UNCLEAR: "setting.call_unclear" as const,
   SETTING_FOLLOWUP_SCHEDULED: "setting.followup_scheduled" as const,
   SETTING_SALE_COMPLETED: "setting.sale_completed" as const,
   SETTING_SALE_FAILED: "setting.sale_failed" as const,
@@ -64,6 +68,26 @@ export interface SettingCallAcceptedPayload {
   call_brief?: Record<string, unknown>;
 }
 
+export interface SettingCallCompletedPayload {
+  lead_id: string;
+  conversation_id: string;
+  transcript: string;
+  duration_seconds?: number;
+  audio_url?: string;
+}
+
+export interface SettingCallFailedPayload {
+  lead_id: string;
+  reason: string;
+  call_sid?: string;
+}
+
+export interface SettingCallInitiatedPayload {
+  lead_id: string;
+  call_sid: string;
+  call_type: string;
+}
+
 export interface SettingCallRejectedPayload {
   lead_id: string;
   reason?: string;
@@ -71,6 +95,11 @@ export interface SettingCallRejectedPayload {
 
 export interface SettingCallStartedPayload {
   lead_id: string;
+}
+
+export interface SettingCallUnclearPayload {
+  lead_id: string;
+  transcript_excerpt?: string;
 }
 
 export interface SettingFollowupScheduledPayload {
