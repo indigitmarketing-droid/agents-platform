@@ -9,3 +9,4 @@ phonenumbers>=8.13
 httpx>=0.28
 pytest-httpx>=0.35
 python-slugify>=8.0
+twilio>=9.0
