@@ -66,12 +66,32 @@ class SettingAgent(BaseAgent):
         event_type = event.get("type", "")
         if event_type == "setting.call_completed":
             return await self._handle_call_completed(event)
+        if event_type == "setting.force_call":
+            return await self._handle_force_call(event)
         if event_type == "builder.website_ready":
             logger.info(
                 f"builder.website_ready for lead {event.get('payload', {}).get('lead_id')}; "
                 "site-ready call is phase 2, skipping."
             )
             return []
+        return []
+
+    async def _handle_force_call(self, event: dict) -> list[dict]:
+        """Manually trigger a call for a specific lead, bypassing the daily batch.
+
+        Useful for testing and for re-triggering after no_answer. DNC is still
+        enforced inside _trigger_call_for_lead. Business hours are NOT enforced
+        (caller's responsibility).
+        """
+        payload = event.get("payload", {})
+        lead_id = payload.get("lead_id")
+        if not lead_id:
+            raise FatalError("force_call missing lead_id")
+        lead = self._load_lead(lead_id)
+        if lead is None:
+            raise FatalError(f"lead {lead_id} not found")
+        logger.info(f"[force_call] triggering call for lead {lead_id} ({lead.get('phone')})")
+        await self._trigger_call_for_lead(lead)
         return []
 
     async def _handle_call_completed(self, event: dict) -> list[dict]:
