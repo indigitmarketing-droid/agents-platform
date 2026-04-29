@@ -40,15 +40,15 @@ def make_full_mock():
 
         sel = MagicMock()
         sel_eq = MagicMock()
-        sel_eq.maybe_single = MagicMock(return_value=sel_eq)
+        sel_eq.limit = MagicMock(return_value=sel_eq)
         if name == "call_logs":
-            sel_eq.execute = MagicMock(return_value=MagicMock(data={
+            sel_eq.execute = MagicMock(return_value=MagicMock(data=[{
                 "id": "log-uuid", "lead_id": "lead-1", "phone": "+15551234567"
-            }))
+            }]))
         elif name == "leads":
-            sel_eq.execute = MagicMock(return_value=MagicMock(data=SAMPLE_LEAD))
+            sel_eq.execute = MagicMock(return_value=MagicMock(data=[SAMPLE_LEAD]))
         else:
-            sel_eq.execute = MagicMock(return_value=MagicMock(data=None))
+            sel_eq.execute = MagicMock(return_value=MagicMock(data=[]))
         sel.eq.return_value = sel_eq
         t.select.return_value = sel
         return t

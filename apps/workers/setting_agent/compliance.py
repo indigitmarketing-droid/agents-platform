@@ -24,7 +24,8 @@ def is_phone_in_dnc(phone: str, supabase_client) -> bool:
         supabase_client.table("do_not_call")
         .select("phone")
         .eq("phone", phone)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    return result.data is not None
+    rows = result.data if result is not None else None
+    return bool(rows)

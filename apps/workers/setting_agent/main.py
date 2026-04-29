@@ -170,20 +170,22 @@ class SettingAgent(BaseAgent):
             self._client.table("call_logs")
             .select("*")
             .eq("conversation_id", conversation_id)
-            .maybe_single()
+            .limit(1)
             .execute()
         )
-        return result.data
+        rows = result.data if result is not None else None
+        return rows[0] if rows else None
 
     def _load_lead(self, lead_id: str):
         result = (
             self._client.table("leads")
             .select("*")
             .eq("id", lead_id)
-            .maybe_single()
+            .limit(1)
             .execute()
         )
-        return result.data
+        rows = result.data if result is not None else None
+        return rows[0] if rows else None
 
     def _update_call_log(self, call_log_id, outcome=None, call_brief=None, status=None, error=None):
         if call_log_id is None:

@@ -42,8 +42,8 @@ def test_dnc_check_phone_in_table():
     table = MagicMock()
     select = MagicMock()
     eq = MagicMock()
-    eq.maybe_single = MagicMock(return_value=eq)
-    eq.execute = MagicMock(return_value=MagicMock(data={"phone": "+15551234567"}))
+    eq.limit = MagicMock(return_value=eq)
+    eq.execute = MagicMock(return_value=MagicMock(data=[{"phone": "+15551234567"}]))
     select.eq.return_value = eq
     table.select.return_value = select
     client.table.return_value = table
@@ -56,8 +56,8 @@ def test_dnc_check_phone_not_in_table():
     table = MagicMock()
     select = MagicMock()
     eq = MagicMock()
-    eq.maybe_single = MagicMock(return_value=eq)
-    eq.execute = MagicMock(return_value=MagicMock(data=None))
+    eq.limit = MagicMock(return_value=eq)
+    eq.execute = MagicMock(return_value=MagicMock(data=[]))
     select.eq.return_value = eq
     table.select.return_value = select
     client.table.return_value = table
