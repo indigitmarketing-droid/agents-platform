@@ -1,14 +1,16 @@
 # Sub-progetto E1 — Customer Dashboard (Auth + Multi-tenant Foundation)
 
 **Data**: 2026-05-01
-**Stato**: Design approvato dall'utente, pronto per writing-plans
+**Stato**: Design approvato dall'utente, scope ridotto dopo discovery del flusso payment.
 **Sub-progetto**: E1 (foundation di E — Customer dashboards)
+
+> **Scope update (2026-05-01)**: il flusso di onboarding (auth.user creation + welcome email) è stato spostato a **Sub-progetto F1 (Stripe Payments)** perché l'onboarding dashboard avviene **dopo il pagamento**, non dopo il build del sito. E1 è ora puro frontend skeleton + Supabase Auth setup. Vedi sezione "Flusso completo platform" in fondo per l'architettura end-to-end.
 
 ---
 
 ## 1. Contesto e scope
 
-Il Sub-progetto E originale comprende 5 features distinte (auth multi-tenant, custom domain, analytics, blog generator, social integration). Per gestire la complessità è decomposto in 5 sub-progetti consecutivi:
+Il Sub-progetto E originale è decomposto in 5 sub-progetti consecutivi:
 
 - **E1** (questo doc) — Auth + multi-tenant dashboard skeleton
 - E2 — Custom domain configuration
@@ -16,58 +18,51 @@ Il Sub-progetto E originale comprende 5 features distinte (auth multi-tenant, cu
 - E4 — Blog generator
 - E5 — Social integration
 
-**E1 è il foundation**: senza login multi-tenant, le altre features non hanno casa. Ogni cliente ha un account auth, vede solo il suo sito, e la dashboard ha placeholder per le features future.
+**E1 è il foundation della UI cliente**: costruisce l'app Next.js `agents-customer-dashboard` con login, password reset, change-password forced, route protection e RLS schema. Non gestisce l'onboarding (creazione auth.user) — quello è F1.
 
 ### Goals di E1
 
-- Cliente con sito generato da Builder può loggarsi con email + password ricevute via email
-- Cliente vede solo i propri dati (multi-tenant via Supabase RLS)
-- Forced password change al primo login (sicurezza)
-- Onboarding 100% agent-orchestrato (no human in the loop)
-- Foundation per E2-E5: layout dashboard estendibile
-
-### Lingua
-
-UI customer-dashboard e welcome email **in inglese** (test market USA). i18n con next-intl è feature futura quando si torna su mercato Italia.
+- App `agents-customer-dashboard` Next.js deployata su Vercel
+- Pagine: login, forgot-password, reset-password, change-password, dashboard home
+- Middleware: route protection + force password change su flag `password_changed=false`
+- RLS multi-tenant su `sites`: customer vede solo proprio sito via `auth.uid()`
+- Schema migration con campi future-proof per F1: `payment_status`, `published_at`
+- UI in **English** (test market USA)
 
 ### Non-goals di E1 (deferred)
 
-- ❌ Custom domain configuration (E2)
-- ❌ Analytics dashboard (E3)
-- ❌ Blog generator (E4)
-- ❌ Social integration (E5)
-- ❌ WhatsApp delivery delle credenziali (lasciato a D2 future)
-- ❌ Password complexity rules custom (default Supabase ≥6 chars)
-- ❌ Email "From" su dominio custom (Resend free tier `onboarding@resend.dev` finché non registriamo dominio)
-- ❌ Modifica email cliente o profilo (read-only in MVP)
+- ❌ Auth.user creation + welcome email → **F1 (Stripe webhook handler)**
+- ❌ Stripe Checkout + payment flow → **F1**
+- ❌ 48h grace period + cleanup cron → **F1**
+- ❌ WhatsApp messaging delle credenziali / payment link → **F2**
+- ❌ Site-ready call (secondo agente ElevenLabs) → **D-Phase2**
+- ❌ Custom domain configuration → **E2**
+- ❌ Analytics dashboard → **E3**
+- ❌ Blog generator → **E4**
+- ❌ Social integration → **E5**
+
+### Lingua
+
+UI customer-dashboard in **English** (test market USA). i18n con next-intl è feature futura quando si torna su mercato Italia.
 
 ---
 
 ## 2. Architettura
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│  Builder Agent (Railway worker, esistente esteso)         │
-│  • riceve setting.call_accepted                            │
-│  • genera sito → INSERT sites + content                    │
-│  • NEW: _onboard_customer() → auth.admin.createUser        │
-│  • NEW: send welcome email via Resend                      │
-│  • NEW: emit customer.onboarded event                      │
-└──────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-        ┌─────────────────────────────────────┐
-        │  Supabase                            │
-        │  ┌──────────────┐  ┌──────────────┐ │
-        │  │ auth.users    │  │ public.sites │ │
-        │  │ (Supabase OOB)│  │ owner_user_id│ │
-        │  └──────────────┘  └──────────────┘ │
-        │  RLS: owner_user_id = auth.uid()    │
-        └─────────────────────────────────────┘
-                          ▲
-                          │
-                          │ JWT in cookies
-                          │
+                     ┌─────────────────────────────┐
+                     │  Supabase                    │
+                     │  ┌──────────────┐  ┌───────┐ │
+                     │  │ auth.users    │  │ sites │ │
+                     │  └──────────────┘  └───────┘ │
+                     │                              │
+                     │  RLS:                        │
+                     │  • authenticated → own site  │
+                     │  • anon → all (for /s/{slug})│
+                     └─────────────────────────────┘
+                                  ▲
+                                  │ JWT in cookies
+                                  │
 ┌──────────────────────────────────────────────────────────┐
 │  agents-customer-dashboard (Vercel, NUOVA app)            │
 │                                                             │
@@ -86,11 +81,11 @@ UI customer-dashboard e welcome email **in inglese** (test market USA). i18n con
 
 ### Punti chiave
 
-1. **Builder Agent estende il proprio handler** dopo `INSERT sites`. Niente nuovo worker. L'onboarding è atomic con la creazione del sito.
+1. **Builder Agent NON viene modificato in E1**. Continua a inserire site con `owner_user_id=NULL`. F1 lo popolerà dopo Stripe webhook payment.
 
 2. **Customer dashboard è un'app Next.js stateless**. Tutto il dato vive in Supabase. RLS fa il filtering — il middleware Next.js verifica solo che ci sia una sessione valida.
 
-3. **Zero coupling tra dashboard e altri agent**. Se uno worker muore, il cliente continua a vedere il suo sito. La dashboard è puro frontend per leggere `sites` filtrati per RLS.
+3. **E1 è valido stand-alone**: l'app può essere testata e2e senza F1 (creando manualmente auth.users + sites tramite Supabase admin per test).
 
 ---
 
@@ -99,90 +94,57 @@ UI customer-dashboard e welcome email **in inglese** (test market USA). i18n con
 ### Migration: `007_customer_onboarding.sql`
 
 ```sql
--- 1. Estendi sites con owner_user_id
+-- 007_customer_onboarding.sql
+
+-- 1. Add owner_user_id to sites (populated by F1 after payment)
 ALTER TABLE sites ADD COLUMN owner_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 CREATE INDEX idx_sites_owner_user ON sites(owner_user_id);
 
--- 2. Abilita RLS su sites (verifica se già attiva)
+-- 2. Add payment fields (used by F1, default values future-proof E1)
+ALTER TABLE sites ADD COLUMN published_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE sites ADD COLUMN payment_status TEXT DEFAULT 'unpaid'
+  CHECK (payment_status IN ('unpaid', 'paid', 'expired'));
+CREATE INDEX idx_sites_payment_grace ON sites(payment_status, published_at);
+
+-- 3. Ensure RLS enabled
 ALTER TABLE sites ENABLE ROW LEVEL SECURITY;
 
--- 3. Policy: cliente loggato vede SOLO il proprio sito
+-- 4. SELECT policy for authenticated customers — own site only
 CREATE POLICY "customers_see_own_site"
   ON sites FOR SELECT
   TO authenticated
   USING (owner_user_id = auth.uid());
 
--- 4. Policy: nessuna mutation lato customer
--- (Service role bypassa automaticamente RLS, quindi Builder Agent non è bloccato)
+-- 5. Block authenticated mutations (service_role bypasses RLS)
 CREATE POLICY "no_customer_writes"
   ON sites FOR ALL
   TO authenticated
   USING (false)
   WITH CHECK (false);
 
--- 5. Policy speciale per agents-sites (rendering pubblico /s/{slug})
--- agents-sites usa anon key per rendering. Manteniamo accesso pubblico in sola lettura.
--- Nota implementazione: verificare se esistono già policy anon su sites prima di applicare;
--- se sì, fare DROP della vecchia + CREATE per evitare collisioni di nome.
+-- 6. Public read for anon (used by agents-sites for /s/{slug} rendering)
 CREATE POLICY "public_read_sites_by_slug"
   ON sites FOR SELECT
   TO anon
   USING (true);
 ```
 
-### `auth.users.user_metadata` schema
+### `auth.users.user_metadata` schema (popolato da F1)
 
-Quando Builder crea un nuovo utente:
+Quando F1 (Stripe webhook) crea il nuovo utente:
 
 ```typescript
 {
   lead_id: "uuid",            // FK al lead originale
-  site_id: "uuid",            // FK al sito creato
+  site_id: "uuid",            // FK al sito che il customer possiede
   company_name: "string",     // per personalizzazione UI
   password_changed: false,    // flag per force-redirect al primo login
-  onboarded_at: "ISO 8601"    // audit
+  onboarded_at: "ISO 8601",   // audit
+  stripe_customer_id: "cus_..."  // per future operations Stripe
 }
 ```
 
-### Nuovo event type
-
-`customer.onboarded` aggiunto a `packages/events_schema/schemas/builder.json`:
-
-```json
-{
-  "type": "customer.onboarded",
-  "source_agent": "builder",
-  "target_agent": null,
-  "payload": {
-    "lead_id": "uuid",
-    "site_id": "uuid",
-    "auth_user_id": "uuid",
-    "email": "string",
-    "email_sent": true
-  }
-}
-```
-
-### Lead lifecycle status (esteso)
-
-`leads.status` (esistente, default 'new') estesa con:
-
-- `accepted` — call risolto positivo
-- `site_published` — sito creato (Builder OK)
-- `customer_onboarded` — auth user esiste + email inviata
-
-(`call_status` resta separato e specifico al Setting Agent.)
-
-### Idempotency design
-
-Builder potrebbe ri-eseguire un evento; ogni step deve essere idempotente:
-
-| Step | Idempotency strategy |
-|---|---|
-| INSERT sites | UNIQUE constraint su `lead_id` (verificare schema) → o UPSERT su slug |
-| `auth.admin.createUser` | Catch 422 email duplicata → ritorna user esistente |
-| Send welcome email | Lookup `customer.onboarded` event con stesso `auth_user_id` → skip se trovato |
-| INSERT customer.onboarded event | Dedupe via auth_user_id |
+E1 legge questo metadata. F1 lo scrive.
 
 ---
 
@@ -269,21 +231,23 @@ export const config = {
 ```typescript
 // src/app/page.tsx (server component)
 export default async function DashboardHome() {
-  const supabase = createServerClient(/* ... */);
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const { data: site } = await supabase
     .from("sites")
     .select("slug, content")
-    .eq("owner_user_id", user!.id)
-    .single();
+    .eq("owner_user_id", user.id)
+    .maybeSingle();
 
   return (
     <main>
-      <h1>Welcome, {user!.user_metadata?.company_name}</h1>
+      <h1>Welcome, {user.user_metadata?.company_name}</h1>
       <section>
         <h2>Your website</h2>
-        <p>URL: <a href={`https://agents-sites.vercel.app/s/${site!.slug}`}>
-          agents-sites.vercel.app/s/{site!.slug}
+        <p>URL: <a href={`https://agents-sites.vercel.app/s/${site?.slug}`}>
+          agents-sites.vercel.app/s/{site?.slug}
         </a></p>
       </section>
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
@@ -297,128 +261,20 @@ export default async function DashboardHome() {
 }
 ```
 
-### D) Builder Agent extension
-
-`apps/workers/website_builder/main.py` — nuovo metodo:
-
-```python
-def _onboard_customer(self, lead: dict, site: dict) -> str | None:
-    """Create auth user + send welcome email. Returns auth_user_id or None on failure."""
-    if not lead.get("email"):
-        logger.warning(f"Lead {lead['id']} has no email, skipping onboarding")
-        return None
-
-    # Idempotency: check if user already exists by email
-    existing_users = self._client.auth.admin.list_users()
-    for u in existing_users.users if hasattr(existing_users, "users") else []:
-        if u.email == lead["email"]:
-            logger.info(f"User already exists for {lead['email']}, skipping create")
-            return u.id
-
-    password = secrets.token_urlsafe(12)
-    try:
-        result = self._client.auth.admin.create_user({
-            "email": lead["email"],
-            "password": password,
-            "email_confirm": True,
-            "user_metadata": {
-                "lead_id": lead["id"],
-                "site_id": site["id"],
-                "company_name": lead["company_name"],
-                "password_changed": False,
-                "onboarded_at": datetime.now(timezone.utc).isoformat(),
-            },
-        })
-    except Exception as e:
-        logger.error(f"Failed to create auth user for {lead['email']}: {e}")
-        return None
-
-    auth_user_id = result.user.id
-    self._client.table("sites").update({
-        "owner_user_id": auth_user_id
-    }).eq("id", site["id"]).execute()
-
-    self._send_welcome_email(lead, site, password)
-    return auth_user_id
-```
-
-E nel main handler dopo `INSERT site`:
-
-```python
-auth_user_id = self._onboard_customer(lead, site)
-if auth_user_id:
-    self._emitter.emit(
-        event_type="customer.onboarded",
-        target_agent=None,
-        payload={
-            "lead_id": lead["id"],
-            "site_id": site["id"],
-            "auth_user_id": auth_user_id,
-            "email": lead["email"],
-            "email_sent": True,
-        },
-    )
-```
-
-### E) Welcome email module
-
-`apps/workers/website_builder/welcome_email.py`:
-
-```python
-from resend import Resend
-import os
-
-DASHBOARD_URL = os.environ.get(
-    "CUSTOMER_DASHBOARD_URL",
-    "https://agents-customer-dashboard.vercel.app"
-)
-
-def send_welcome_email(lead: dict, site: dict, password: str):
-    resend = Resend(api_key=os.environ["RESEND_API_KEY"])
-    site_url = f"https://agents-sites.vercel.app/s/{site['slug']}"
-    resend.emails.send({
-        "from": "onboarding@resend.dev",
-        "to": [lead["email"]],
-        "subject": f"Your {lead['company_name']} website is ready",
-        "html": _render_welcome_html(lead, site_url, password),
-        "text": _render_welcome_text(lead, site_url, password),
-    })
-```
-
-Body HTML/text (English) contains: customer name, generated site URL, dashboard URL, login email, temporary password, "change your password on first login" instruction.
-
-### F) Dipendenze nuove
+### D) Dipendenze nuove (E1 only)
 
 - App Next.js: `@supabase/ssr@^0.5`, `@supabase/supabase-js@^2.45`, `lucide-react`, `clsx`, `tailwind-merge`
-- Builder Agent Python: nessuna nuova (resend già usato in agents-sites; supabase-py copre auth admin)
+- No changes to Python workers in E1 (Builder Agent extension è in F1)
 
 ---
 
-## 5. Data Flow + State Machines
+## 5. Data Flow + State Machines (E1 only)
 
-### Flow 1 — Onboarding
-
-```
-Setting Agent emit setting.call_accepted (target=builder)
-                       ↓
-Builder Agent picks event
-   1. _build_site_content() → Claude PBS copy + theme
-   2. INSERT into sites
-   3. _onboard_customer():
-       a. check user exists by email
-       b. auth.admin.create_user
-       c. UPDATE sites.owner_user_id
-       d. send welcome email via Resend
-   4. emit customer.onboarded
-                       ↓
-Cliente riceve email con: URL sito, URL dashboard, email + password temp
-```
-
-### Flow 2 — Primo login
+### Flow 1 — Login utente esistente
 
 ```
 Cliente apre dashboard URL → /login (no session)
-   ↓ inserisce email + password temp
+   ↓ inserisce email + password
 Supabase Auth verifica → JWT in cookie
    ↓
 Middleware controlla user_metadata.password_changed
@@ -429,7 +285,7 @@ Middleware controlla user_metadata.password_changed
    └── true → render dashboard /
 ```
 
-### Flow 3 — Password reset
+### Flow 2 — Password reset
 
 ```
 /forgot-password → email submission
@@ -447,52 +303,41 @@ Form per nuova password → updateUser({password})
 redirect /login
 ```
 
-### State Machine: lead lifecycle (esteso)
+### Onboarding flow (per documentazione — implementato in F1)
 
 ```
-scraped → never_called → called → accepted → [BUILDER]
-                              ↘ rejected     site_published
-                              ↘ unclear         ↓
-                                              customer_onboarded
+Builder finisce site → site INSERT con owner_user_id=NULL, payment_status='unpaid'
+   ↓
+[D-Phase2] Setting Agent secondo agente ElevenLabs chiama lead → vende $349
+   ↓
+[F2] Worker invia WhatsApp con Stripe Checkout link
+   ↓
+Cliente clicca link → Stripe Checkout → paga
+   ↓
+Stripe webhook payment.succeeded → [F1 handler]:
+   1. INSERT auth.users with metadata
+   2. UPDATE sites SET owner_user_id=<uid>, payment_status='paid'
+   3. Send welcome email (Resend) with credentials
+   ↓
+Cliente apre email → click dashboard URL → /login (E1 entrata in scena)
+   ↓
+Force password change → dashboard home
 ```
 
-### Error handling matrix
+E1 entra in gioco solo dopo che F1 ha completato l'onboarding. Senza F1, la dashboard può essere testata manualmente creando auth.users via Supabase admin.
 
-| Step | Failure mode | Retry | User-visible |
-|---|---|---|---|
-| Builder INSERT site | DB error | Sì (retry framework) | No |
-| `auth.admin.create_user` | Email duplicata | No (treat as success) | No |
-| `auth.admin.create_user` | Network/Supabase down | Sì (RetryableError) | No |
-| UPDATE site.owner_user_id | DB error | Sì (idempotente) | No |
-| Resend send email | API down 5xx | Sì max 3 | No |
-| Resend send email | Email invalid 4xx | No (FatalError, log) | Cliente non riceve email — operator alert |
-| Cliente login con password temp | wrong password | No | "Credenziali non valide" |
-| Cliente non cambia password | Middleware redirect loop | N/A | Forced redirect ogni request |
+### Error handling matrix (E1 only)
 
-### Edge cases
-
-1. **Lead senza email**: `_onboard_customer` ritorna `None`, log warning, sito orfano (`owner_user_id=null`). Operator può associare manualmente.
-
-2. **Email duplicata cross-lead**: secondo onboarding trova user esistente; se ha già un `site_id` in metadata diverso, log error e non collegare (operator decide).
-
-3. **Email delivery fail post user creation**: user esiste in auth ma cliente non ha credenziali. Operator può fare password reset dal Supabase dashboard.
-
-4. **Cliente cambia email**: NON supportato in MVP (campo immutable).
-
-5. **Sito eliminato ma user esiste**: `ON DELETE SET NULL` su owner_user_id → cliente vede "Sito non trovato — contatta supporto".
+| Step | Failure mode | Comportamento |
+|---|---|---|
+| Cliente login con password sbagliata | Supabase 400 | "Invalid credentials" |
+| Cliente non cambia password | N/A | Forced redirect ogni request finché flag=true |
+| RLS rifiuta query | N/A | dashboard mostra "No website found — contact support" |
+| Sito eliminato (F1 cleanup) ma user esiste | `ON DELETE SET NULL` | dashboard mostra "No website found" — F1 dovrebbe anche eliminare auth.user |
 
 ---
 
 ## 6. Testing strategy
-
-### Test unit Python (Builder Agent)
-
-`apps/workers/website_builder/tests/test_onboarding.py`:
-- `_onboard_customer` happy path
-- lead senza email → return None
-- email duplicata → ritorna user esistente, non duplica
-- Resend fail 5xx → retry
-- Resend fail 4xx → log + non rilancia
 
 ### Test unit TypeScript (customer-dashboard)
 
@@ -500,29 +345,22 @@ scraped → never_called → called → accepted → [BUILDER]
 - Path pubbliche bypass auth
 - User non autenticato → redirect /login
 - User autenticato + password_changed=false → redirect /change-password
-- User autenticato + password_changed=true → render
-
-`apps/customer-dashboard/__tests__/onboarding.test.ts`:
-- Login form invio credenziali
-- forgot-password invoca resetPasswordForEmail
-- change-password updateUser + flag aggiornato
-
-### Test integration Python
-
-Estensione `apps/workers/website_builder/tests/test_pipeline_integration.py`:
-- Caso completo: setting.call_accepted con lead.email → check sites.owner_user_id valorizzato + customer.onboarded emesso + Resend mock chiamato
+- User autenticato + password_changed=true → render `/`
+- /change-password no redirect-loop quando flag=false
 
 ### Test E2E manuale (post-deploy)
 
-1. Trigger `setting.force_call` su lead test → conversation `accepted` (mock o real)
-2. Builder esegue → site creato
-3. Verifica email arriva (a `info@natalinoai.com` finché Resend domain unverified)
-4. Click link dashboard → /login
-5. Inserisci credenziali → redirect a /change-password
-6. Cambia password → redirect a /
-7. Vedi welcome + URL sito + 3 cards "Coming soon"
-8. Logout → /login
-9. Re-login con nuova password → / direttamente
+1. Manualmente crea un auth.user via Supabase dashboard:
+   - Email: test@example.com
+   - Password: temp123
+   - User metadata: `{password_changed: false, company_name: "Test Co"}`
+2. Manualmente UPDATE un site con `owner_user_id=<test-uid>`
+3. Browser → /login
+4. Inserisci credenziali → redirect a /change-password
+5. Cambia password → redirect a /
+6. Verifica: "Welcome, Test Co" + URL sito + 3 cards
+7. Logout → /login → re-login → / direttamente
+8. Test password reset: /forgot-password → email → reset link → nuova password → login
 
 ---
 
@@ -540,15 +378,12 @@ vercel --prod
 
 URL prodotto default: `https://agents-customer-dashboard.vercel.app`.
 
-### Env vars
+### Env vars (E1 only)
 
 | Var | Scope | Valore |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | customer-dashboard Vercel | `https://smzmgzblbliprwbjptjs.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | customer-dashboard Vercel | (anon key esistente) |
-| `CUSTOMER_DASHBOARD_URL` | Builder Agent Railway | `https://agents-customer-dashboard.vercel.app` |
-
-Builder Agent ha già `RESEND_API_KEY` + `SUPABASE_SERVICE_KEY` + `SUPABASE_URL`.
 
 ### Supabase Auth config (critico)
 
@@ -560,20 +395,17 @@ ai "Redirect URLs allowed" — necessario per password reset link.
 ### Rollout plan
 
 1. Apply migration `007_customer_onboarding.sql`
-2. Builder Agent extension (code + tests + deploy Railway)
-3. customer-dashboard scaffold (code + tests)
-4. Deploy customer-dashboard su Vercel + Supabase URL config
-5. E2E test
-6. Update BRAINSTORM_STATE + memory
+2. Scaffold customer-dashboard (code + tests)
+3. Deploy customer-dashboard su Vercel + Supabase URL config
+4. E2E test (manual auth.user creation)
+5. Update BRAINSTORM_STATE + memory
 
 ---
 
 ## 8. Observability
 
-- **Eventi `customer.onboarded`** in `events` table = audit trail principale
-- **Vercel function logs** del customer-dashboard mostrano middleware redirects (debug "user stuck on /change-password")
-- **Resend dashboard** mostra delivery status welcome email (open rate, bounce)
-- **Supabase Auth Logs** (`auth.audit_log_entries`) traccia ogni login/logout/reset
+- **Vercel function logs** del customer-dashboard mostrano middleware redirects (utile per debug "why is user stuck on /change-password")
+- **Supabase Auth Logs** (`auth.audit_log_entries`) traccia ogni login/logout/password reset
 
 ---
 
@@ -581,18 +413,56 @@ ai "Redirect URLs allowed" — necessario per password reset link.
 
 | # | Question | Default decision |
 |---|---|---|
-| 1 | Email "From" address | `onboarding@resend.dev` (Resend free tier). Durante MVP welcome email arriva SOLO a `info@natalinoai.com` (account Resend verificato). Per inviare a clienti reali serve dominio Resend verificato. |
-| 2 | Branding/UI | Match agents-sites premium (Inter + Playfair) |
-| 3 | Logout UX | Bottone in dashboard, no conferma modal |
-| 4 | Password complexity | Default Supabase ≥6 chars, no validation custom |
-| 5 | Session lifetime | Default Supabase (1h access + 30d refresh) |
-| 6 | Multi-site future | Schema attuale 1:1 customer:site, espandibile |
+| 1 | Branding/UI | Match agents-sites premium (Inter + Playfair) |
+| 2 | Logout UX | Bottone in dashboard, no conferma modal |
+| 3 | Password complexity | Default Supabase ≥6 chars, no validation custom |
+| 4 | Session lifetime | Default Supabase (1h access + 30d refresh) |
+| 5 | Multi-site future | Schema attuale 1:1 customer:site, espandibile |
 
 ---
 
-## 10. Riferimenti
+## 10. Flusso completo platform (riferimento, parte di E1 in grassetto)
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│  B (Scraping) ─→ leads in DB                                           │
+│                                                                         │
+│  D-Phase1 (Setting cold call) ─→ lead.call_status=accepted              │
+│                                                                         │
+│  C (Builder) ─→ INSERT sites (published_at=NOW, payment_status='unpaid')│
+│                                                                         │
+│  D-Phase2 (Setting site-ready call, secondo agente ElevenLabs)          │
+│            ─→ chiama stesso lead, vende $349                            │
+│            ─→ trigger F2: invio WhatsApp con Stripe Checkout link       │
+│                                                                         │
+│  F1 (Stripe Checkout + webhook):                                        │
+│       │                                                                 │
+│       ├─ paga in 48h →                                                  │
+│       │   payment.succeeded webhook:                                    │
+│       │     • CREATE auth.user with metadata                            │
+│       │     • UPDATE sites SET owner_user_id, payment_status='paid'     │
+│       │     • Send welcome email with dashboard credentials             │
+│       │       ↓                                                         │
+│       │  *** E1 entra in scena ***                                      │
+│       │   Cliente clicca link in email → login → change password →      │
+│       │   dashboard home con URL sito + coming-soon cards               │
+│       │                                                                 │
+│       └─ non paga in 48h → cleanup cron:                                │
+│           • DELETE FROM sites WHERE payment_status='unpaid' AND          │
+│             published_at < NOW() - 48h                                  │
+│                                                                         │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+**E1 scope = il box grassetto sopra**: la customer dashboard quando il cliente clicca il link nella welcome email post-pagamento.
+
+---
+
+## 11. Riferimenti
 
 - Requirements originali: `docs/superpowers/specs/sub-project-E-requirements.md`
-- Spec Builder Agent (estendiamo): `docs/superpowers/specs/2026-04-25-website-builder-design.md`
-- Spec Setting Agent (precedente cycle): `docs/superpowers/specs/2026-04-28-setting-agent-design.md`
+- Spec Builder Agent (esistente, non modificato in E1): `docs/superpowers/specs/2026-04-25-website-builder-design.md`
+- Spec Setting Agent: `docs/superpowers/specs/2026-04-28-setting-agent-design.md`
 - Stato infra: `BRAINSTORM_STATE.md`
+- Sub-progetti F1/F2/D-Phase2: da brainstormare dopo E1 deploy

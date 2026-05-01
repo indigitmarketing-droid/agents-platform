@@ -2,50 +2,56 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the foundation Sub-progetto E1 — a multi-tenant customer dashboard (Next.js) with Supabase Auth, plus auto-onboarding (auth user creation + welcome email) integrated into Builder Agent.
+**Goal:** Build the foundation Sub-progetto E1 — a multi-tenant customer dashboard (Next.js) with Supabase Auth + RLS schema. **Scope ridotto rispetto a draft iniziale**: il customer onboarding (auth.user creation + welcome email) è spostato a F1 (Stripe payment webhook).
 
-**Architecture:** New `apps/customer-dashboard/` Next.js app with Supabase SSR auth. Builder Agent extended to call `auth.admin.create_user` and send welcome email via Resend after each `INSERT sites`. RLS policies on `sites` enforce multi-tenant isolation by `auth.uid()`. UI in English.
+**Architecture:** New `apps/customer-dashboard/` Next.js app with Supabase SSR auth. Migration `007` aggiunge schema multi-tenant + campi future-proof (`payment_status`, `published_at`) usati da F1. Builder Agent NON viene modificato in E1.
 
-**Tech Stack:** Next.js 16+ App Router, `@supabase/ssr`, Tailwind v4, Python supabase-py + resend, Postgres RLS.
+**Tech Stack:** Next.js 16+ App Router, `@supabase/ssr`, Tailwind v4, vitest.
 
 **Spec reference:** `docs/superpowers/specs/2026-05-01-customer-dashboard-e1-design.md`
 
 ---
 
-## Task 1: Database migration + event schema
+## Task 1: Database migration
 
 **Files:**
 - Create: `supabase/migrations/007_customer_onboarding.sql`
-- Modify: `packages/events_schema/schemas/builder.json`
 
-- [ ] **Step 1: Write the migration**
+- [ ] **Step 1: Write the migration SQL**
 
 Create `supabase/migrations/007_customer_onboarding.sql`:
 
 ```sql
 -- 007_customer_onboarding.sql
+-- E1: multi-tenant schema + future-proof columns for F1 (Stripe)
 
--- 1. Add owner_user_id to sites
+-- 1. Add owner_user_id to sites (populated by F1 after payment)
 ALTER TABLE sites ADD COLUMN owner_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 CREATE INDEX idx_sites_owner_user ON sites(owner_user_id);
 
--- 2. Ensure RLS enabled
+-- 2. Add payment fields (used by F1)
+ALTER TABLE sites ADD COLUMN published_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE sites ADD COLUMN payment_status TEXT DEFAULT 'unpaid'
+  CHECK (payment_status IN ('unpaid', 'paid', 'expired'));
+CREATE INDEX idx_sites_payment_grace ON sites(payment_status, published_at);
+
+-- 3. Ensure RLS enabled
 ALTER TABLE sites ENABLE ROW LEVEL SECURITY;
 
--- 3. SELECT policy for authenticated customers — own site only
+-- 4. SELECT policy for authenticated customers — own site only
 CREATE POLICY "customers_see_own_site"
   ON sites FOR SELECT
   TO authenticated
   USING (owner_user_id = auth.uid());
 
--- 4. Block authenticated mutations (service_role bypasses RLS)
+-- 5. Block authenticated mutations (service_role bypasses RLS)
 CREATE POLICY "no_customer_writes"
   ON sites FOR ALL
   TO authenticated
   USING (false)
   WITH CHECK (false);
 
--- 5. Public read for anon (used by agents-sites for /s/{slug} rendering)
+-- 6. Public read for anon (used by agents-sites for /s/{slug} rendering)
 CREATE POLICY "public_read_sites_by_slug"
   ON sites FOR SELECT
   TO anon
@@ -56,538 +62,39 @@ CREATE POLICY "public_read_sites_by_slug"
 
 Use `mcp__plugin_supabase_supabase__execute_sql` with the SQL above against project `smzmgzblbliprwbjptjs`.
 
-Then verify:
+- [ ] **Step 3: Verify migration applied**
+
+Execute via Supabase MCP:
 
 ```sql
-SELECT column_name FROM information_schema.columns
-WHERE table_name='sites' AND column_name='owner_user_id';
+SELECT column_name, data_type, column_default
+FROM information_schema.columns
+WHERE table_name='sites' AND column_name IN ('owner_user_id', 'published_at', 'payment_status')
+ORDER BY column_name;
 
 SELECT policyname FROM pg_policies WHERE tablename='sites';
 ```
 
-Expected: column exists, 3 policies present.
+Expected: 3 columns present, 3 policies (customers_see_own_site, no_customer_writes, public_read_sites_by_slug).
 
-- [ ] **Step 3: Add `customer.onboarded` event type**
+- [ ] **Step 4: Backfill `published_at` for existing sites**
 
-Read `packages/events_schema/schemas/builder.json` and add to the schemas array:
-
-```json
-{
-  "type": "customer.onboarded",
-  "description": "Customer auth user created + welcome email sent after site is built",
-  "source_agent": "builder",
-  "target_agent": null,
-  "payload_schema": {
-    "type": "object",
-    "required": ["lead_id", "site_id", "auth_user_id", "email"],
-    "properties": {
-      "lead_id": {"type": "string", "format": "uuid"},
-      "site_id": {"type": "string", "format": "uuid"},
-      "auth_user_id": {"type": "string", "format": "uuid"},
-      "email": {"type": "string", "format": "email"},
-      "email_sent": {"type": "boolean"}
-    }
-  }
-}
+```sql
+UPDATE sites SET published_at = COALESCE(published_at, NOW()) WHERE published_at IS NULL;
 ```
 
-- [ ] **Step 4: Run schema validation**
-
-```bash
-cd agents-platform
-python -c "import json; json.load(open('packages/events_schema/schemas/builder.json'))"
-```
-
-Expected: no JSON parse error.
+Expected: rows updated (or 0 if none).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add supabase/migrations/007_customer_onboarding.sql packages/events_schema/schemas/builder.json
-git commit -m "feat(E1): add migration 007 + customer.onboarded event schema"
+git add supabase/migrations/007_customer_onboarding.sql
+git commit -m "feat(E1): migration 007 - multi-tenant sites schema + payment fields"
 ```
 
 ---
 
-## Task 2: Welcome email module (TDD)
-
-**Files:**
-- Create: `apps/workers/website_builder/welcome_email.py`
-- Create: `apps/workers/website_builder/tests/test_welcome_email.py`
-
-- [ ] **Step 1: Write failing test**
-
-Create `apps/workers/website_builder/tests/test_welcome_email.py`:
-
-```python
-"""Tests for welcome_email module."""
-import os
-from unittest.mock import patch, MagicMock
-import pytest
-
-from apps.workers.website_builder.welcome_email import (
-    send_welcome_email,
-    render_welcome_html,
-    render_welcome_text,
-)
-
-
-def _sample_lead():
-    return {
-        "id": "lead-uuid",
-        "email": "test@example.com",
-        "company_name": "Mario Pizza",
-    }
-
-
-def _sample_site():
-    return {"id": "site-uuid", "slug": "mario-pizza"}
-
-
-def test_render_welcome_text_contains_credentials():
-    text = render_welcome_text(_sample_lead(), "https://example.com/s/mario-pizza", "tempPass123")
-    assert "Mario Pizza" in text
-    assert "test@example.com" in text
-    assert "tempPass123" in text
-    assert "mario-pizza" in text
-
-
-def test_render_welcome_html_contains_credentials_and_dashboard_link():
-    html = render_welcome_html(_sample_lead(), "https://example.com/s/mario-pizza", "tempPass123")
-    assert "Mario Pizza" in html
-    assert "test@example.com" in html
-    assert "tempPass123" in html
-    assert "agents-customer-dashboard.vercel.app" in html or "CUSTOMER_DASHBOARD_URL" in os.environ
-
-
-@patch("apps.workers.website_builder.welcome_email.resend")
-def test_send_welcome_email_calls_resend(mock_resend):
-    mock_resend.api_key = None
-    mock_emails = MagicMock()
-    mock_resend.Emails = mock_emails
-
-    with patch.dict(os.environ, {"RESEND_API_KEY": "re_test"}):
-        send_welcome_email(_sample_lead(), _sample_site(), "pwd")
-
-    mock_emails.send.assert_called_once()
-    call_args = mock_emails.send.call_args[0][0]
-    assert call_args["to"] == ["test@example.com"]
-    assert "Mario Pizza" in call_args["subject"]
-    assert call_args["from"] == "onboarding@resend.dev"
-
-
-@patch("apps.workers.website_builder.welcome_email.resend")
-def test_send_welcome_email_raises_on_resend_error(mock_resend):
-    mock_emails = MagicMock()
-    mock_emails.send.side_effect = Exception("Resend down")
-    mock_resend.Emails = mock_emails
-
-    with patch.dict(os.environ, {"RESEND_API_KEY": "re_test"}):
-        with pytest.raises(Exception, match="Resend down"):
-            send_welcome_email(_sample_lead(), _sample_site(), "pwd")
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-```bash
-cd agents-platform
-python -m pytest apps/workers/website_builder/tests/test_welcome_email.py -v
-```
-
-Expected: FAIL — "ModuleNotFoundError: No module named ... welcome_email".
-
-- [ ] **Step 3: Write the implementation**
-
-Create `apps/workers/website_builder/welcome_email.py`:
-
-```python
-"""Welcome email module: sends onboarding email to newly created customers via Resend."""
-import os
-import logging
-import resend
-
-logger = logging.getLogger(__name__)
-
-DASHBOARD_URL = os.environ.get(
-    "CUSTOMER_DASHBOARD_URL",
-    "https://agents-customer-dashboard.vercel.app",
-)
-
-
-def render_welcome_text(lead: dict, site_url: str, password: str) -> str:
-    return f"""Hi {lead['company_name']},
-
-Your new website is live!
-
-Website URL: {site_url}
-
-Customer dashboard: {DASHBOARD_URL}
-
-Login email: {lead['email']}
-Temporary password: {password}
-
-You'll be asked to set a new password the first time you log in.
-
-Thanks,
-The Agents Platform team
-"""
-
-
-def render_welcome_html(lead: dict, site_url: str, password: str) -> str:
-    return f"""<!DOCTYPE html>
-<html><body style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1a1a1a">
-<h1 style="color:#0a0a0a">Your website is live, {lead['company_name']}!</h1>
-<p>We've built your new site. Here's everything you need:</p>
-<ul style="line-height:1.8">
-  <li><strong>Website URL:</strong> <a href="{site_url}">{site_url}</a></li>
-  <li><strong>Customer dashboard:</strong> <a href="{DASHBOARD_URL}">{DASHBOARD_URL}</a></li>
-</ul>
-<h2>Login credentials</h2>
-<p>Email: <code>{lead['email']}</code><br>
-Temporary password: <code>{password}</code></p>
-<p style="color:#666;font-size:14px">
-You'll be required to set a new password on your first login.
-</p>
-<p>— The Agents Platform team</p>
-</body></html>
-"""
-
-
-def send_welcome_email(lead: dict, site: dict, password: str) -> None:
-    """Send the onboarding welcome email via Resend.
-
-    Raises on Resend API failure (caller decides retry/log).
-    """
-    resend.api_key = os.environ["RESEND_API_KEY"]
-    site_url = f"https://agents-sites.vercel.app/s/{site['slug']}"
-    resend.Emails.send({
-        "from": "onboarding@resend.dev",
-        "to": [lead["email"]],
-        "subject": f"Your {lead['company_name']} website is ready",
-        "html": render_welcome_html(lead, site_url, password),
-        "text": render_welcome_text(lead, site_url, password),
-    })
-    logger.info(f"Welcome email sent to {lead['email']} for site {site['id']}")
-```
-
-- [ ] **Step 4: Run tests to verify they pass**
-
-```bash
-python -m pytest apps/workers/website_builder/tests/test_welcome_email.py -v
-```
-
-Expected: 4 tests PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/workers/website_builder/welcome_email.py apps/workers/website_builder/tests/test_welcome_email.py
-git commit -m "feat(E1): welcome email module with Resend (TDD)"
-```
-
----
-
-## Task 3: `_onboard_customer` method (TDD)
-
-**Files:**
-- Modify: `apps/workers/website_builder/main.py` (add `_onboard_customer` + integrate in handler)
-- Create: `apps/workers/website_builder/tests/test_onboarding.py`
-
-- [ ] **Step 1: Write failing tests**
-
-Create `apps/workers/website_builder/tests/test_onboarding.py`:
-
-```python
-"""Tests for _onboard_customer method on WebsiteBuilderAgent."""
-import os
-from unittest.mock import patch, MagicMock
-import pytest
-
-from apps.workers.website_builder.main import WebsiteBuilderAgent
-
-
-def _make_agent():
-    """Build agent with mocked supabase client."""
-    with patch.dict(os.environ, {
-        "ANTHROPIC_API_KEY": "test",
-        "RESEND_API_KEY": "re_test",
-        "AGENTS_SITES_BASE_URL": "https://agents-sites.vercel.app",
-    }):
-        client = MagicMock()
-        agent = WebsiteBuilderAgent(supabase_client=client)
-        return agent, client
-
-
-def _sample_lead(email="customer@example.com"):
-    return {"id": "lead-1", "email": email, "company_name": "Mario Pizza"}
-
-
-def _sample_site():
-    return {"id": "site-1", "slug": "mario-pizza"}
-
-
-@patch("apps.workers.website_builder.main.send_welcome_email")
-def test_onboard_customer_happy_path(mock_send):
-    agent, client = _make_agent()
-
-    # Mock list_users (no existing user)
-    client.auth.admin.list_users.return_value = MagicMock(users=[])
-    # Mock create_user
-    created = MagicMock()
-    created.user.id = "auth-uid"
-    client.auth.admin.create_user.return_value = created
-    # Mock UPDATE sites
-    client.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock()
-
-    result = agent._onboard_customer(_sample_lead(), _sample_site())
-
-    assert result == "auth-uid"
-    client.auth.admin.create_user.assert_called_once()
-    create_arg = client.auth.admin.create_user.call_args[0][0]
-    assert create_arg["email"] == "customer@example.com"
-    assert create_arg["email_confirm"] is True
-    assert create_arg["user_metadata"]["password_changed"] is False
-    assert create_arg["user_metadata"]["lead_id"] == "lead-1"
-    mock_send.assert_called_once()
-
-
-def test_onboard_customer_no_email_returns_none():
-    agent, client = _make_agent()
-    lead_no_email = {"id": "lead-1", "company_name": "Mario", "email": None}
-    result = agent._onboard_customer(lead_no_email, _sample_site())
-    assert result is None
-    client.auth.admin.create_user.assert_not_called()
-
-
-@patch("apps.workers.website_builder.main.send_welcome_email")
-def test_onboard_customer_existing_user_returns_id_no_create(mock_send):
-    agent, client = _make_agent()
-
-    existing_user = MagicMock()
-    existing_user.email = "customer@example.com"
-    existing_user.id = "existing-uid"
-    client.auth.admin.list_users.return_value = MagicMock(users=[existing_user])
-
-    result = agent._onboard_customer(_sample_lead(), _sample_site())
-
-    assert result == "existing-uid"
-    client.auth.admin.create_user.assert_not_called()
-    # Should still NOT re-send email (idempotent)
-    mock_send.assert_not_called()
-
-
-@patch("apps.workers.website_builder.main.send_welcome_email")
-def test_onboard_customer_create_user_failure_returns_none(mock_send):
-    agent, client = _make_agent()
-    client.auth.admin.list_users.return_value = MagicMock(users=[])
-    client.auth.admin.create_user.side_effect = Exception("Supabase 500")
-
-    result = agent._onboard_customer(_sample_lead(), _sample_site())
-
-    assert result is None
-    mock_send.assert_not_called()
-```
-
-- [ ] **Step 2: Run tests to verify they fail**
-
-```bash
-python -m pytest apps/workers/website_builder/tests/test_onboarding.py -v
-```
-
-Expected: 4 FAIL — `_onboard_customer` not defined.
-
-- [ ] **Step 3: Add `_onboard_customer` method to `WebsiteBuilderAgent`**
-
-In `apps/workers/website_builder/main.py`, add imports near top (with existing imports):
-
-```python
-import secrets
-from datetime import datetime, timezone
-from apps.workers.website_builder.welcome_email import send_welcome_email
-```
-
-Add the method inside the `WebsiteBuilderAgent` class:
-
-```python
-def _onboard_customer(self, lead: dict, site: dict) -> str | None:
-    """Create auth user + send welcome email after site INSERT.
-
-    Returns auth_user_id (str) on success, None on failure.
-    Idempotent: if user already exists by email, returns existing id without re-sending email.
-    """
-    email = lead.get("email")
-    if not email:
-        logger.warning(f"Lead {lead['id']} has no email, skipping onboarding")
-        return None
-
-    # Idempotency check: list users + filter by email
-    try:
-        list_resp = self._client.auth.admin.list_users()
-        users = list_resp.users if hasattr(list_resp, "users") else []
-        for u in users:
-            if u.email == email:
-                logger.info(f"User already exists for {email} ({u.id}), skipping create + email")
-                return u.id
-    except Exception as e:
-        logger.warning(f"Failed to list users for idempotency check: {e}; proceeding to create")
-
-    password = secrets.token_urlsafe(12)
-    try:
-        result = self._client.auth.admin.create_user({
-            "email": email,
-            "password": password,
-            "email_confirm": True,
-            "user_metadata": {
-                "lead_id": lead["id"],
-                "site_id": site["id"],
-                "company_name": lead["company_name"],
-                "password_changed": False,
-                "onboarded_at": datetime.now(timezone.utc).isoformat(),
-            },
-        })
-    except Exception as e:
-        logger.error(f"Failed to create auth user for {email}: {e}")
-        return None
-
-    auth_user_id = result.user.id
-
-    # Link site to user
-    try:
-        self._client.table("sites").update({
-            "owner_user_id": auth_user_id
-        }).eq("id", site["id"]).execute()
-    except Exception as e:
-        logger.error(f"Failed to link site {site['id']} to user {auth_user_id}: {e}")
-        # User is created but site not linked — operator must intervene
-        return auth_user_id
-
-    # Send welcome email (raise = retry by event framework)
-    try:
-        send_welcome_email(lead, site, password)
-    except Exception as e:
-        logger.error(f"Welcome email failed for {email}: {e}")
-        # Non-fatal — user can use password reset to recover
-
-    return auth_user_id
-```
-
-- [ ] **Step 4: Run tests to verify they pass**
-
-```bash
-python -m pytest apps/workers/website_builder/tests/test_onboarding.py -v
-```
-
-Expected: 4 PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/workers/website_builder/main.py apps/workers/website_builder/tests/test_onboarding.py
-git commit -m "feat(E1): add _onboard_customer method with idempotency (TDD)"
-```
-
----
-
-## Task 4: Integrate onboarding into Builder handler
-
-**Files:**
-- Modify: `apps/workers/website_builder/main.py` (call `_onboard_customer` from main handler + emit event)
-- Modify: `apps/workers/website_builder/tests/test_pipeline_integration.py` (extend integration test)
-
-- [ ] **Step 1: Read existing handler to find INSERT site location**
-
-Read `apps/workers/website_builder/main.py` and locate the method that does `INSERT into sites`. It's likely called `handle_event` or a sub-method like `_build_site`. Identify the exact spot AFTER successful insert.
-
-- [ ] **Step 2: Add the onboarding call + event emit after INSERT site**
-
-Inside the relevant handler method (after `INSERT sites` succeeds and `site` dict is in scope), add:
-
-```python
-# Trigger customer onboarding (auth user + welcome email)
-auth_user_id = self._onboard_customer(lead, site)
-if auth_user_id:
-    self._emitter.emit(
-        event_type="customer.onboarded",
-        target_agent=None,
-        payload={
-            "lead_id": lead["id"],
-            "site_id": site["id"],
-            "auth_user_id": auth_user_id,
-            "email": lead["email"],
-            "email_sent": True,
-        },
-    )
-else:
-    logger.warning(f"Onboarding skipped for lead {lead['id']} (no email or create failed)")
-```
-
-- [ ] **Step 3: Update integration test**
-
-Read `apps/workers/website_builder/tests/test_pipeline_integration.py`. Add a new test method (after existing tests):
-
-```python
-@patch("apps.workers.website_builder.main.send_welcome_email")
-def test_pipeline_emits_customer_onboarded_after_site_insert(mock_send_email):
-    """Full pipeline: setting.call_accepted → INSERT site → onboard customer → emit customer.onboarded"""
-    with patch.dict(os.environ, {
-        "ANTHROPIC_API_KEY": "test",
-        "RESEND_API_KEY": "re_test",
-        "AGENTS_SITES_BASE_URL": "https://agents-sites.vercel.app",
-    }):
-        # Build mocks (reuse helper if exists in file, else inline)
-        client = MagicMock()
-
-        # ... mock setup for sites table inserts/queries ...
-        # ... mock auth.admin.list_users → empty
-        # ... mock auth.admin.create_user → returns id="onboard-uid"
-        client.auth.admin.list_users.return_value = MagicMock(users=[])
-        created = MagicMock()
-        created.user.id = "onboard-uid"
-        client.auth.admin.create_user.return_value = created
-
-        captured_events = []
-        emitter_mock = MagicMock()
-        emitter_mock.emit.side_effect = lambda **kwargs: captured_events.append(kwargs)
-
-        # ... rest of pipeline integration test setup, including agent + event ...
-        # Trigger handler with setting.call_accepted event with lead.email
-        # Assert: customer.onboarded event was emitted with correct payload
-
-        onboarded = [e for e in captured_events if e.get("event_type") == "customer.onboarded"]
-        assert len(onboarded) == 1
-        assert onboarded[0]["payload"]["auth_user_id"] == "onboard-uid"
-        assert onboarded[0]["payload"]["email_sent"] is True
-        mock_send_email.assert_called_once()
-```
-
-NOTE: the exact mock setup for `client.table("sites").insert(...)` etc. depends on the existing test helpers in the file. Read existing tests in the same file and follow the same mock patterns for sites + leads queries.
-
-- [ ] **Step 4: Run integration tests**
-
-```bash
-python -m pytest apps/workers/website_builder/tests/test_pipeline_integration.py -v
-```
-
-Expected: all PASS, including new `test_pipeline_emits_customer_onboarded`.
-
-- [ ] **Step 5: Run full Builder Agent test suite**
-
-```bash
-python -m pytest apps/workers/website_builder/tests/ -v
-```
-
-Expected: ALL pass.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add apps/workers/website_builder/main.py apps/workers/website_builder/tests/test_pipeline_integration.py
-git commit -m "feat(E1): wire _onboard_customer into Builder handler + emit customer.onboarded"
-```
-
----
-
-## Task 5: Scaffold `apps/customer-dashboard/` Next.js app
+## Task 2: Scaffold `apps/customer-dashboard/` Next.js app
 
 **Files:**
 - Create: `apps/customer-dashboard/package.json`
@@ -772,24 +279,17 @@ export default function Home() {
 }
 ```
 
-- [ ] **Step 10: Install dependencies**
+- [ ] **Step 10: Install dependencies + verify build**
 
 ```bash
 cd apps/customer-dashboard
 npm install
-```
-
-Expected: dependencies installed without errors.
-
-- [ ] **Step 11: Verify dev build**
-
-```bash
 npm run build
 ```
 
-Expected: build OK.
+Expected: dependencies installed, build OK.
 
-- [ ] **Step 12: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 git add apps/customer-dashboard/
@@ -798,9 +298,10 @@ git commit -m "feat(E1): scaffold customer-dashboard Next.js app"
 
 ---
 
-## Task 6: Supabase client utilities + UI primitives
+## Task 3: Supabase clients + UI primitives + shared components
 
 **Files:**
+- Create: `apps/customer-dashboard/src/lib/utils.ts`
 - Create: `apps/customer-dashboard/src/lib/supabase/client.ts`
 - Create: `apps/customer-dashboard/src/lib/supabase/server.ts`
 - Create: `apps/customer-dashboard/src/components/ui/Button.tsx`
@@ -808,7 +309,6 @@ git commit -m "feat(E1): scaffold customer-dashboard Next.js app"
 - Create: `apps/customer-dashboard/src/components/ui/Label.tsx`
 - Create: `apps/customer-dashboard/src/components/DashboardCard.tsx`
 - Create: `apps/customer-dashboard/src/components/LogoutButton.tsx`
-- Create: `apps/customer-dashboard/src/lib/utils.ts` (clsx + twMerge helper)
 
 - [ ] **Step 1: Create `src/lib/utils.ts`**
 
@@ -834,7 +334,7 @@ export function createClient() {
 }
 ```
 
-- [ ] **Step 3: Create `src/lib/supabase/server.ts` (server-side cookies-aware)**
+- [ ] **Step 3: Create `src/lib/supabase/server.ts`**
 
 ```typescript
 import { createServerClient } from "@supabase/ssr";
@@ -855,7 +355,7 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options));
           } catch {
-            // Server Component context — set is no-op, refresh handled by middleware
+            // Server Component context — set is no-op
           }
         },
       },
@@ -996,7 +496,7 @@ git commit -m "feat(E1): supabase clients + UI primitives + DashboardCard + Logo
 
 ---
 
-## Task 7: Login page + auth callback route
+## Task 4: Login page + auth callback route
 
 **Files:**
 - Create: `apps/customer-dashboard/src/app/login/page.tsx`
@@ -1119,7 +619,7 @@ git commit -m "feat(E1): login page + auth callback route"
 
 ---
 
-## Task 8: Forgot password + reset password pages
+## Task 5: Forgot password + reset password pages
 
 **Files:**
 - Create: `apps/customer-dashboard/src/app/forgot-password/page.tsx`
@@ -1280,7 +780,7 @@ git commit -m "feat(E1): forgot-password + reset-password pages"
 
 ---
 
-## Task 9: Change password page (forced first login)
+## Task 6: Change password page (forced first login)
 
 **Files:**
 - Create: `apps/customer-dashboard/src/app/change-password/page.tsx`
@@ -1390,12 +890,12 @@ git commit -m "feat(E1): change-password page (forced first login)"
 
 ---
 
-## Task 10: Dashboard home page (protected)
+## Task 7: Dashboard home page (protected)
 
 **Files:**
 - Modify: `apps/customer-dashboard/src/app/page.tsx` (replace placeholder)
 
-- [ ] **Step 1: Replace `src/app/page.tsx` with the protected dashboard home**
+- [ ] **Step 1: Replace `src/app/page.tsx`**
 
 ```typescript
 import { createClient } from "@/lib/supabase/server";
@@ -1481,7 +981,7 @@ git commit -m "feat(E1): protected dashboard home with site URL + coming-soon ca
 
 ---
 
-## Task 11: Middleware (auth gate + force password change)
+## Task 8: Middleware (auth gate + force password change)
 
 **Files:**
 - Create: `apps/customer-dashboard/middleware.ts`
@@ -1559,7 +1059,7 @@ git commit -m "feat(E1): middleware for auth gate + force password change"
 
 ---
 
-## Task 12: Vitest config + middleware test
+## Task 9: Vitest config + middleware tests
 
 **Files:**
 - Create: `apps/customer-dashboard/vitest.config.ts`
@@ -1637,7 +1137,7 @@ describe("middleware", () => {
   it("redirects unauthenticated user to /login", async () => {
     mockSupabase(null);
     const res = await middleware(makeReq("/"));
-    expect(res.status).toBe(307); // Next.js redirect
+    expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/login");
   });
 
@@ -1680,7 +1180,7 @@ git commit -m "test(E1): vitest config + middleware tests"
 
 ---
 
-## Task 13: Vercel deploy + env vars + Supabase Auth URL config
+## Task 10: Vercel deploy + Supabase Auth URL config
 
 **Files:** N/A (CLI + dashboard config)
 
@@ -1691,13 +1191,22 @@ cd apps/customer-dashboard
 vercel link --yes
 ```
 
-When prompted, choose "Create new project" with name `customer-dashboard` (or accept default `agents-customer-dashboard`).
+When prompted, choose "Create new project" with name `agents-customer-dashboard` (or accept default).
 
 Expected: `.vercel/project.json` created.
 
-- [ ] **Step 2: Add env vars to Vercel**
+- [ ] **Step 2: Add env vars**
 
-Get the Supabase anon key from existing agents-dashboard env (`vercel env ls production` from that project), or pull from `apps/dashboard/.env`.
+Pull existing anon key from agents-dashboard:
+
+```bash
+cd ../dashboard
+vercel env pull .env.production --environment production --yes
+grep NEXT_PUBLIC_SUPABASE_ANON_KEY .env.production
+cd ../customer-dashboard
+```
+
+Then add to customer-dashboard:
 
 ```bash
 echo "https://smzmgzblbliprwbjptjs.supabase.co" | vercel env add NEXT_PUBLIC_SUPABASE_URL production
@@ -1712,153 +1221,128 @@ vercel env ls production
 
 Expected: 2 env vars listed.
 
-- [ ] **Step 3: Add `CUSTOMER_DASHBOARD_URL` to Builder Agent on Railway**
-
-This step requires Railway dashboard access. In Railway:
-
-1. Open project → service `setting-agent` and `website-builder` workers
-2. For `website-builder` service: Variables → Add `CUSTOMER_DASHBOARD_URL=https://agents-customer-dashboard.vercel.app` (use actual URL after first deploy)
-3. Redeploy worker to pick up env
-
-Mark this step done after confirming the env var is set on Railway.
-
-- [ ] **Step 4: Deploy to production**
+- [ ] **Step 3: Deploy to production**
 
 ```bash
 cd apps/customer-dashboard
 vercel --prod --yes
 ```
 
-Expected: deploy ready, URL printed (capture it for Supabase config in next step).
+Expected: deploy ready, URL printed (capture for Supabase config).
 
-- [ ] **Step 5: Configure Supabase Auth redirect URLs**
+- [ ] **Step 4: Configure Supabase Auth redirect URLs**
 
-This step requires Supabase dashboard access (no MCP tool for this). Open Supabase project at https://supabase.com/dashboard/project/smzmgzblbliprwbjptjs:
+This step requires Supabase dashboard access (no MCP tool for this). Open https://supabase.com/dashboard/project/smzmgzblbliprwbjptjs/auth/url-configuration:
 
-1. Settings → Auth → URL Configuration
-2. Add to "Redirect URLs": `https://<actual-deployment-url>.vercel.app/**`
+1. "Site URL" → `https://agents-customer-dashboard.vercel.app`
+2. "Redirect URLs" → add `https://agents-customer-dashboard.vercel.app/**`
 3. Save
 
 Mark this step done after saving in Supabase dashboard.
 
-- [ ] **Step 6: Smoke test**
+- [ ] **Step 5: Smoke test**
 
 ```bash
-curl --ssl-no-revoke -s -o /dev/null -w "HTTP %{http_code}\n" "https://<deployment-url>.vercel.app/login"
+curl --ssl-no-revoke -s -o /dev/null -w "HTTP %{http_code}\n" "https://agents-customer-dashboard.vercel.app/login"
 ```
 
-Expected: HTTP 200 (or 307 redirect — both acceptable; 401/500 = misconfig).
+Expected: HTTP 200.
 
-- [ ] **Step 7: Commit deploy artifacts**
+- [ ] **Step 6: Commit deploy artifacts**
 
 ```bash
 cd ../..
-git add apps/customer-dashboard/.vercel  # if needed
+git add apps/customer-dashboard/.vercel/project.json 2>/dev/null || true
 git commit --allow-empty -m "chore(E1): customer-dashboard deployed to Vercel production"
 ```
 
 ---
 
-## Task 14: E2E manual test
+## Task 11: E2E manual test
 
 **Files:** N/A (manual verification)
 
-- [ ] **Step 1: Verify Builder Agent deployed with onboarding**
+- [ ] **Step 1: Create test auth.user via Supabase MCP**
 
-Confirm Railway has the latest commit (with `_onboard_customer`). Run:
-
-```bash
-gh api "repos/indigitmarketing-droid/agents-platform/deployments?per_page=5" | python -c "import json, sys; data=json.load(sys.stdin); [print(d['sha'][:7], d['created_at']) for d in data[:3]]"
-```
-
-If latest deploy SHA does NOT match `git rev-parse HEAD`, manually trigger Railway redeploy.
-
-- [ ] **Step 2: Insert test lead with email**
-
-Use Supabase MCP `execute_sql`:
+Use `mcp__plugin_supabase_supabase__execute_sql`:
 
 ```sql
-INSERT INTO leads (company_name, phone, email, has_website, status, source, country_code, call_status)
-VALUES ('TEST E2E Customer Onboarding', '+393477544532', 'info@natalinoai.com', false, 'new', 'manual_test', 'US', 'never_called')
-RETURNING id;
+-- Create auth.user manually for E2E test
+SELECT auth.uid();  -- check if function exists
 ```
 
-Capture the returned `id` as `<test_lead_id>`.
+The Supabase Auth admin API is preferred for creating users. Use the Supabase REST API via curl, OR via Supabase MCP if available, OR via Supabase dashboard:
 
-- [ ] **Step 3: Trigger setting.call_accepted directly (bypass actual call)**
+Via Supabase dashboard:
+1. https://supabase.com/dashboard/project/smzmgzblbliprwbjptjs/auth/users
+2. "Add user" → "Create new user"
+3. Email: `e2e-test@natalinoai.com`
+4. Password: `TempPass1234`
+5. Auto Confirm User: YES
+6. After creation, edit user metadata → set:
+   ```json
+   {
+     "company_name": "E2E Test Co",
+     "password_changed": false
+   }
+   ```
 
-Insert event for Builder:
+Capture the new user's UUID.
+
+- [ ] **Step 2: Create test site row linked to user**
+
+Via Supabase MCP:
 
 ```sql
-INSERT INTO events (type, target_agent, source_agent, payload, status)
-VALUES ('setting.call_accepted', 'builder', 'human', jsonb_build_object(
-  'lead_id', '<test_lead_id>',
-  'lead', jsonb_build_object(
-    'id', '<test_lead_id>',
-    'company_name', 'TEST E2E Customer Onboarding',
-    'email', 'info@natalinoai.com',
-    'phone', '+393477544532',
-    'category', 'restaurant',
-    'city', 'Test City'
-  ),
-  'call_brief', jsonb_build_object('services', ARRAY['pizza'], 'style_preference', 'modern')
-), 'pending')
-RETURNING id;
+INSERT INTO sites (lead_id, slug, content, owner_user_id, payment_status, published_at)
+VALUES (
+  (SELECT id FROM leads ORDER BY created_at DESC LIMIT 1),  -- use any existing lead
+  'e2e-test-site',
+  '{"hero": {"headline": "E2E Test Site"}}'::jsonb,
+  '<user_uuid_from_step_1>',
+  'paid',
+  NOW()
+)
+RETURNING id, slug;
 ```
 
-- [ ] **Step 4: Wait + verify chain executed**
+- [ ] **Step 3: Login flow walkthrough**
 
-After ~30s:
+Open `https://agents-customer-dashboard.vercel.app/login` in a browser:
 
-```sql
-SELECT 'site' AS what, json_build_object('id',id,'slug',slug,'owner_user_id',owner_user_id)::text AS data FROM sites WHERE owner_user_id IS NOT NULL ORDER BY created_at DESC LIMIT 1
-UNION ALL
-SELECT 'event_onboarded' AS what, json_build_object('payload',payload,'created_at',created_at)::text FROM events WHERE type='customer.onboarded' ORDER BY created_at DESC LIMIT 1
-UNION ALL
-SELECT 'auth_user' AS what, json_build_object('id',id,'email',email,'metadata',raw_user_meta_data)::text FROM auth.users WHERE email='info@natalinoai.com' LIMIT 1;
-```
-
-Expected: 3 rows showing site (with owner_user_id set), customer.onboarded event, auth.users row.
-
-- [ ] **Step 5: Verify welcome email arrived**
-
-Check `info@natalinoai.com` inbox. Email contains: company name, site URL, login email, temporary password, dashboard URL.
-
-- [ ] **Step 6: Login flow walkthrough**
-
-Open the deployment URL in a browser:
-
-1. Click "Sign in" → enter `info@natalinoai.com` + temp password
+1. Enter `e2e-test@natalinoai.com` + `TempPass1234`
 2. Should redirect to `/change-password`
 3. Set new password (≥6 chars), confirm, submit
 4. Should redirect to `/`
-5. Verify dashboard shows: "Welcome, TEST E2E Customer Onboarding", site URL link, 3 coming-soon cards
-6. Click logout → redirect to /login
+5. Verify dashboard shows: "Welcome, E2E Test Co", site URL link, 3 coming-soon cards
+6. Click logout → redirect to `/login`
 7. Login again with new password → should go directly to `/` (no force-change redirect)
 
-- [ ] **Step 7: Test password reset flow**
+- [ ] **Step 4: Test password reset flow**
 
 1. Logout, click "Forgot password?"
-2. Enter `info@natalinoai.com` → "Check your inbox"
+2. Enter `e2e-test@natalinoai.com` → "Check your inbox"
 3. Click reset link in email → land on `/reset-password`
 4. Enter new password → redirect to `/login?reset=success`
 5. Login with new password → dashboard
 
-- [ ] **Step 8: Cleanup test data**
+- [ ] **Step 5: Test RLS multi-tenant isolation**
+
+Create a SECOND test user (e.g., `e2e-test-2@natalinoai.com`) via Supabase dashboard. Login as this second user → dashboard should show "No website found" (since their `owner_user_id` is different from any site).
+
+- [ ] **Step 6: Cleanup test data**
+
+Via Supabase MCP:
 
 ```sql
-DELETE FROM events WHERE payload->>'lead_id' = '<test_lead_id>';
-DELETE FROM call_logs WHERE lead_id = '<test_lead_id>';
-DELETE FROM sites WHERE id IN (SELECT id FROM sites WHERE owner_user_id IN (SELECT id FROM auth.users WHERE email='info@natalinoai.com'));
-DELETE FROM auth.users WHERE email='info@natalinoai.com';  -- via Supabase admin or SQL with service role
-DELETE FROM leads WHERE id = '<test_lead_id>';
+DELETE FROM sites WHERE slug='e2e-test-site';
 ```
 
-NOTE: deletion of auth.users from public schema may require Supabase admin key — easier to delete from Auth dashboard if needed.
+Via Supabase dashboard auth.users page: delete `e2e-test@natalinoai.com` and `e2e-test-2@natalinoai.com`.
 
 ---
 
-## Task 15: Update BRAINSTORM_STATE + memory
+## Task 12: Update BRAINSTORM_STATE + memory
 
 **Files:**
 - Modify: `BRAINSTORM_STATE.md`
@@ -1880,35 +1364,37 @@ After:
 | E3 | Analytics | da fare |
 | E4 | Blog generator | da fare |
 | E5 | Social integration | da fare |
+| F1 | Stripe Payments + 48h grace + cleanup | da brainstormare (post-E1) |
+| F2 | WhatsApp follow-up agent | da brainstormare (post-F1) |
+| D-Phase2 | Site-ready call (secondo agente ElevenLabs) | da brainstormare (post-F1) |
 ```
 
 - [ ] **Step 2: Add E1 closure section to BRAINSTORM_STATE.md**
 
-After the E1 section, add a closure block similar to D:
-
 ```markdown
 ## Sub-progetto E1 — Customer Dashboard ✅ DEPLOYATO
 
-**Build completato 2026-XX-XX**: nuova app customer-dashboard, Supabase Auth, RLS multi-tenant, Builder Agent extension per onboarding automatico.
+**Build completato 2026-XX-XX**: nuova app customer-dashboard, Supabase Auth, RLS multi-tenant. Onboarding flow (auth.user + welcome email) **deferred a F1** perché avviene post-pagamento.
 
 **Componenti deployati**:
-- Migration `007_customer_onboarding.sql` applicata
-- `apps/workers/website_builder/welcome_email.py` + onboarding integrato
-- `apps/customer-dashboard/` Next.js live su Vercel
+- Migration `007_customer_onboarding.sql`: owner_user_id, payment_status, published_at + RLS policies
+- `apps/customer-dashboard/` Next.js app live su Vercel
 - 5 routes: /login, /forgot-password, /reset-password, /change-password, /
 - Middleware: auth gate + force password change al primo login
-- 1 nuovo evento: `customer.onboarded`
 
-**E2E validato**: lead test → Builder build site → auth user creato → welcome email inviata → cliente login → forced password change → dashboard render.
+**E2E validato**: manual auth.user creation (Supabase admin) → dashboard login → forced password change → dashboard render con site URL + coming-soon cards. Password reset flow OK. Multi-tenant RLS isolation verificata.
 
 **Documenti**:
 - Spec: `agents-platform/docs/superpowers/specs/2026-05-01-customer-dashboard-e1-design.md`
 - Plan: `agents-platform/docs/superpowers/plans/2026-05-01-customer-dashboard-e1.md`
+
+**Next steps coordinated**:
+- F1 (Stripe) sarà il sub-progetto immediatamente successivo, completa l'onboarding flow
+- F2 (WhatsApp messaging) è gated da Twilio WhatsApp Business approval (settimane)
+- D-Phase2 (site-ready call) è il secondo agente ElevenLabs per vendere $349
 ```
 
 - [ ] **Step 3: Update memory `project_decomposition.md`**
-
-Update the description and decomposition list to reflect E1 done. Add new line in component list:
 
 Replace `- **E** — Admin dashboards multi-tenant + blog generator (requirements at...)` with:
 
@@ -1918,13 +1404,16 @@ Replace `- **E** — Admin dashboards multi-tenant + blog generator (requirement
 - **E3** — Analytics ← pending
 - **E4** — Blog generator ← pending
 - **E5** — Social integration ← pending
+- **F1** — Stripe Payments + 48h grace + cleanup (one-time $349) ← pending brainstorm
+- **F2** — WhatsApp follow-up agent ← pending (Twilio Business API approval gated)
+- **D-Phase2** — Site-ready call (secondo agente ElevenLabs) ← pending brainstorm
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add BRAINSTORM_STATE.md  # if not in repo, just save the file edit
-# Memory file is outside repo — no git add needed
+cd "c:\Users\indig\.antigravity\AGENT 2.0_TEST/agents-platform"
+# BRAINSTORM_STATE.md is in parent dir (outside agents-platform repo)
 echo "BRAINSTORM_STATE updated; memory persisted via Write tool"
 ```
 
@@ -1932,10 +1421,12 @@ echo "BRAINSTORM_STATE updated; memory persisted via Write tool"
 
 ## Self-Review Checklist (already performed)
 
-✅ **Spec coverage**: every section of the spec maps to one or more tasks (migration → T1; welcome email → T2; onboard method → T3; integration → T4; scaffold → T5; clients/ui → T6; pages → T7-T10; middleware → T11; tests → T12; deploy → T13; E2E → T14; closure → T15).
+✅ **Spec coverage**: every section of the (slimmed-down) spec maps to one or more tasks (migration → T1; scaffold → T2; clients/UI → T3; pages → T4-T7; middleware → T8; tests → T9; deploy → T10; E2E → T11; closure → T12).
 
 ✅ **Placeholder scan**: no TBDs, all code blocks complete with full implementations.
 
-✅ **Type consistency**: `_onboard_customer` returns `str | None`. `auth_user_id` consistent across tasks. Event type `customer.onboarded` matches schema in T1.
+✅ **Type consistency**: `password_changed` flag consistent across middleware, change-password, reset-password. `owner_user_id` consistent across migration, dashboard query, RLS.
 
 ✅ **No "similar to Task N"**: each task has its own complete code.
+
+✅ **Scope alignment**: Tasks 2-4 from previous plan (Builder Agent extension + welcome email) explicitly NOT in this plan — moved to F1.
