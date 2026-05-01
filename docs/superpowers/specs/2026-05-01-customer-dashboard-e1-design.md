@@ -26,6 +26,10 @@ Il Sub-progetto E originale comprende 5 features distinte (auth multi-tenant, cu
 - Onboarding 100% agent-orchestrato (no human in the loop)
 - Foundation per E2-E5: layout dashboard estendibile
 
+### Lingua
+
+UI customer-dashboard e welcome email **in inglese** (test market USA). i18n con next-intl è feature futura quando si torna su mercato Italia.
+
 ### Non-goals di E1 (deferred)
 
 - ❌ Custom domain configuration (E2)
@@ -34,7 +38,7 @@ Il Sub-progetto E originale comprende 5 features distinte (auth multi-tenant, cu
 - ❌ Social integration (E5)
 - ❌ WhatsApp delivery delle credenziali (lasciato a D2 future)
 - ❌ Password complexity rules custom (default Supabase ≥6 chars)
-- ❌ Email "From" su dominio custom (Resend free tier `noreply@resend.dev` finché non registriamo dominio)
+- ❌ Email "From" su dominio custom (Resend free tier `onboarding@resend.dev` finché non registriamo dominio)
 - ❌ Modifica email cliente o profilo (read-only in MVP)
 
 ---
@@ -275,17 +279,17 @@ export default async function DashboardHome() {
 
   return (
     <main>
-      <h1>Benvenuto, {user!.user_metadata?.company_name}</h1>
+      <h1>Welcome, {user!.user_metadata?.company_name}</h1>
       <section>
-        <h2>Il tuo sito</h2>
+        <h2>Your website</h2>
         <p>URL: <a href={`https://agents-sites.vercel.app/s/${site!.slug}`}>
           agents-sites.vercel.app/s/{site!.slug}
         </a></p>
       </section>
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-        <DashboardCard title="Visite & Analytics" comingSoon />
-        <DashboardCard title="Dominio personalizzato" comingSoon />
-        <DashboardCard title="Blog automatico" comingSoon />
+        <DashboardCard title="Visits & Analytics" comingSoon />
+        <DashboardCard title="Custom Domain" comingSoon />
+        <DashboardCard title="Automatic Blog" comingSoon />
       </section>
       <LogoutButton />
     </main>
@@ -375,13 +379,13 @@ def send_welcome_email(lead: dict, site: dict, password: str):
     resend.emails.send({
         "from": "onboarding@resend.dev",
         "to": [lead["email"]],
-        "subject": f"Il tuo sito {lead['company_name']} è pronto",
+        "subject": f"Your {lead['company_name']} website is ready",
         "html": _render_welcome_html(lead, site_url, password),
         "text": _render_welcome_text(lead, site_url, password),
     })
 ```
 
-Body HTML/text contiene: nome cliente, URL sito generato, URL dashboard, email login, password temporanea, istruzione "cambia password al primo accesso".
+Body HTML/text (English) contains: customer name, generated site URL, dashboard URL, login email, temporary password, "change your password on first login" instruction.
 
 ### F) Dipendenze nuove
 
@@ -512,7 +516,7 @@ Estensione `apps/workers/website_builder/tests/test_pipeline_integration.py`:
 
 1. Trigger `setting.force_call` su lead test → conversation `accepted` (mock o real)
 2. Builder esegue → site creato
-3. Verifica email arriva (a `indigit.marketing@gmail.com` finché Resend domain unverified)
+3. Verifica email arriva (a `info@natalinoai.com` finché Resend domain unverified)
 4. Click link dashboard → /login
 5. Inserisci credenziali → redirect a /change-password
 6. Cambia password → redirect a /
@@ -577,7 +581,7 @@ ai "Redirect URLs allowed" — necessario per password reset link.
 
 | # | Question | Default decision |
 |---|---|---|
-| 1 | Email "From" address | `noreply@resend.dev` (free tier) finché dominio agentsplatform.app registrato |
+| 1 | Email "From" address | `onboarding@resend.dev` (Resend free tier). Durante MVP welcome email arriva SOLO a `info@natalinoai.com` (account Resend verificato). Per inviare a clienti reali serve dominio Resend verificato. |
 | 2 | Branding/UI | Match agents-sites premium (Inter + Playfair) |
 | 3 | Logout UX | Bottone in dashboard, no conferma modal |
 | 4 | Password complexity | Default Supabase ≥6 chars, no validation custom |
