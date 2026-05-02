@@ -112,7 +112,28 @@ class SettingAgent(BaseAgent):
         call_log = self._load_call_log(conversation_id)
         if call_log is None:
             logger.warning(f"call_log not found for {conversation_id}; analyzing anyway")
-            call_log = {"id": None, "lead_id": lead_id, "phone": None}
+            call_log = {"id": None, "lead_id": lead_id, "phone": None, "call_type": "cold_call"}
+
+        # D-Phase2: route site_ready_call to sales handler
+        if call_log.get("call_type") == "site_ready_call":
+            # Inject site_id from call_log lookup and delegate
+            site_row = (
+                self._client.table("sites")
+                .select("id")
+                .eq("lead_id", lead_id)
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            site_rows = site_row.data if site_row is not None else None
+            if site_rows:
+                event_with_site = {
+                    **event,
+                    "payload": {**payload, "site_id": site_rows[0]["id"]},
+                }
+                return await self._handle_sales_call_completed(event_with_site)
+            logger.warning(f"site not found for sales call lead {lead_id}")
+            return []
 
         lead = self._load_lead(lead_id)
         if lead is None:
@@ -254,7 +275,7 @@ class SettingAgent(BaseAgent):
 
         self._client.table("call_logs").insert({
             "lead_id": lead_id,
-            "call_type": "sales",
+            "call_type": "site_ready_call",
             "agent_id": sales_agent_id,
             "phone": lead["phone"],
             "status": "initiated",
