@@ -25,6 +25,9 @@ from apps.workers.setting_agent.compliance import (
     is_phone_in_dnc,
     US_TIMEZONE,
 )
+from apps.workers.setting_agent.sales_analyzer import analyze_sales_transcript
+from apps.workers.setting_agent.stripe_client import create_stripe_checkout
+from apps.workers.setting_agent.twilio_sms import send_sms
 
 logger = logging.getLogger(__name__)
 
@@ -275,7 +278,77 @@ class SettingAgent(BaseAgent):
         }]
 
     async def _handle_sales_call_completed(self, event: dict) -> list[dict]:
-        """Stub - implemented in Task 6."""
+        """Process sales call transcript, route based on outcome."""
+        payload = event.get("payload", {})
+        site_id = payload.get("site_id")
+        transcript = payload.get("transcript", "")
+        if not site_id:
+            return []
+
+        site = self._load_site(site_id)
+        if not site:
+            return []
+        lead = self._load_lead(site["lead_id"])
+        if not lead:
+            return []
+
+        try:
+            analysis = analyze_sales_transcript(transcript, lead, self._claude)
+            outcome = analysis["outcome"]
+        except AnalysisError:
+            outcome = "unclear"
+
+        self._client.table("sites").update({
+            "sales_call_outcome": outcome,
+        }).eq("id", site_id).execute()
+
+        if outcome in ("accepted_pay", "interested_no_call"):
+            try:
+                checkout_url, session_id = create_stripe_checkout(site, lead)
+            except Exception as e:
+                logger.error(f"Stripe checkout creation failed for site {site_id}: {e}")
+                return []
+            self._client.table("sites").update({
+                "stripe_checkout_session_id": session_id,
+            }).eq("id", site_id).execute()
+            try:
+                send_sms(
+                    to=lead["phone"],
+                    body=f"Hi {lead.get('company_name', 'there')}, here's your link to activate your website ($349): {checkout_url}",
+                )
+            except Exception as e:
+                logger.error(f"SMS send failed for site {site_id}: {e}")
+            return [{
+                "type": "setting.payment_link_sent",
+                "target_agent": None,
+                "payload": {
+                    "site_id": site_id,
+                    "stripe_session_id": session_id,
+                    "channel": "sms",
+                    "phone": lead.get("phone"),
+                },
+            }]
+
+        if outcome == "rejected":
+            self._client.table("sites").delete().eq("id", site_id).execute()
+            try:
+                self._client.table("do_not_call").insert({
+                    "phone": lead.get("phone"),
+                    "reason": "sales_call_rejected",
+                }).execute()
+            except Exception as e:
+                logger.warning(f"DNC insert failed (likely duplicate): {e}")
+            return [{
+                "type": "site.deleted_unpaid",
+                "target_agent": None,
+                "payload": {
+                    "site_id": site_id,
+                    "slug": site.get("slug"),
+                    "reason": "rejected",
+                },
+            }]
+
+        # no_answer / busy / unclear → no action, retry next batch
         return []
 
     def _update_call_log(self, call_log_id, outcome=None, call_brief=None, status=None, error=None):
