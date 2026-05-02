@@ -74,16 +74,12 @@ class SettingAgent(BaseAgent):
             return await self._handle_call_completed(event)
         if event_type == "setting.force_call":
             return await self._handle_force_call(event)
-        if event_type == "builder.site_ready":
+        # Builder emits "builder.website_ready" — historically this was a no-op
+        # but D-Phase2 now triggers a sales call on it.
+        if event_type in ("builder.website_ready", "builder.site_ready"):
             return await self._handle_site_ready(event)
         if event_type == "setting.sales_call_completed":
             return await self._handle_sales_call_completed(event)
-        if event_type == "builder.website_ready":
-            logger.info(
-                f"builder.website_ready for lead {event.get('payload', {}).get('lead_id')}; "
-                "site-ready call is phase 2, skipping."
-            )
-            return []
         return []
 
     async def _handle_force_call(self, event: dict) -> list[dict]:
