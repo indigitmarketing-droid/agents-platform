@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-unpaid-sites",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

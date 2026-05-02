@@ -19,6 +19,11 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Cron endpoints are protected by Bearer token (CRON_SECRET) — bypass browser auth
+  if (path.startsWith("/api/cron/")) {
+    return NextResponse.next();
+  }
+
   if (!ADMIN_USER || !ADMIN_PASS) {
     return new NextResponse("Auth not configured (missing ADMIN_USERNAME/ADMIN_PASSWORD env)", { status: 503 });
   }
