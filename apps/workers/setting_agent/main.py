@@ -28,6 +28,8 @@ from apps.workers.setting_agent.compliance import (
 
 logger = logging.getLogger(__name__)
 
+MAX_SALES_CALL_ATTEMPTS = 3
+
 
 class SettingAgent(BaseAgent):
     """
@@ -60,6 +62,7 @@ class SettingAgent(BaseAgent):
 
         self._agent_id_voice = os.environ.get("ELEVENLABS_AGENT_ID", "")
         self._agent_phone_id = os.environ.get("ELEVENLABS_AGENT_PHONE_NUMBER_ID", "")
+        self._sales_agent_id = os.environ.get("ELEVENLABS_SALES_AGENT_ID", "")
         self._last_batch_date = None
 
     async def handle_event(self, event: dict) -> list[dict]:
@@ -68,6 +71,10 @@ class SettingAgent(BaseAgent):
             return await self._handle_call_completed(event)
         if event_type == "setting.force_call":
             return await self._handle_force_call(event)
+        if event_type == "builder.site_ready":
+            return await self._handle_site_ready(event)
+        if event_type == "setting.sales_call_completed":
+            return await self._handle_sales_call_completed(event)
         if event_type == "builder.website_ready":
             logger.info(
                 f"builder.website_ready for lead {event.get('payload', {}).get('lead_id')}; "
@@ -186,6 +193,90 @@ class SettingAgent(BaseAgent):
         )
         rows = result.data if result is not None else None
         return rows[0] if rows else None
+
+    def _load_site(self, site_id: str):
+        result = (
+            self._client.table("sites")
+            .select("*")
+            .eq("id", site_id)
+            .limit(1)
+            .execute()
+        )
+        rows = result.data if result is not None else None
+        return rows[0] if rows else None
+
+    async def _handle_site_ready(self, event: dict) -> list[dict]:
+        """D-Phase2 trigger: site is built, call lead with sales agent."""
+        payload = event.get("payload", {})
+        site_id = payload.get("site_id")
+        lead_id = payload.get("lead_id")
+        if not site_id or not lead_id:
+            return []
+
+        site = self._load_site(site_id)
+        lead = self._load_lead(lead_id)
+        if not site or not lead or not lead.get("phone"):
+            return []
+
+        attempts = site.get("sales_call_attempts", 0) or 0
+        if attempts >= MAX_SALES_CALL_ATTEMPTS:
+            logger.warning(
+                f"Max sales call attempts ({MAX_SALES_CALL_ATTEMPTS}) reached for site {site_id}"
+            )
+            return []
+
+        if is_phone_in_dnc(lead["phone"], self._client):
+            logger.info(f"Skipping sales call: {lead['phone']} in DNC")
+            return []
+
+        sales_agent_id = self._sales_agent_id
+        if not sales_agent_id:
+            logger.error("ELEVENLABS_SALES_AGENT_ID not set; cannot trigger sales call")
+            return []
+
+        try:
+            result = self._elevenlabs.trigger_outbound_call(
+                agent_id=sales_agent_id,
+                agent_phone_number_id=self._agent_phone_id,
+                to_number=lead["phone"],
+            )
+        except ElevenLabsError as e:
+            logger.error(f"Sales call trigger failed for site {site_id}: {e}")
+            return [{
+                "type": "setting.sales_call_failed",
+                "target_agent": None,
+                "payload": {"site_id": site_id, "lead_id": lead_id, "reason": str(e)},
+            }]
+
+        self._client.table("sites").update({
+            "sales_call_attempts": attempts + 1,
+            "last_sales_call_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", site_id).execute()
+
+        self._client.table("call_logs").insert({
+            "lead_id": lead_id,
+            "call_type": "sales",
+            "agent_id": sales_agent_id,
+            "phone": lead["phone"],
+            "status": "initiated",
+            "conversation_id": result.get("conversation_id"),
+            "call_sid": result.get("callSid") or result.get("call_sid"),
+        }).execute()
+
+        return [{
+            "type": "setting.sales_call_initiated",
+            "target_agent": None,
+            "payload": {
+                "lead_id": lead_id,
+                "site_id": site_id,
+                "call_sid": result.get("callSid") or result.get("call_sid", ""),
+                "agent_id": sales_agent_id,
+            },
+        }]
+
+    async def _handle_sales_call_completed(self, event: dict) -> list[dict]:
+        """Stub - implemented in Task 6."""
+        return []
 
     def _update_call_log(self, call_log_id, outcome=None, call_brief=None, status=None, error=None):
         if call_log_id is None:
