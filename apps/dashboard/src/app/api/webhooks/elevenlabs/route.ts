@@ -4,7 +4,17 @@ import crypto from "crypto";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!;
-const webhookSecret = process.env.ELEVENLABS_WEBHOOK_SECRET ?? "";
+
+// Multi-secret support: each ElevenLabs Conv AI agent has its own webhook signing secret.
+// Provide comma-separated list via ELEVENLABS_WEBHOOK_SECRETS, or single via ELEVENLABS_WEBHOOK_SECRET.
+const webhookSecrets = (
+  process.env.ELEVENLABS_WEBHOOK_SECRETS ??
+  process.env.ELEVENLABS_WEBHOOK_SECRET ??
+  ""
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 interface WebhookPayload {
   conversation_id?: string;
@@ -16,15 +26,19 @@ interface WebhookPayload {
 }
 
 function verifyHmac(body: string, signature: string | null): boolean {
-  if (!signature || !webhookSecret) return false;
-  const computed = crypto
-    .createHmac("sha256", webhookSecret)
-    .update(body)
-    .digest("hex");
-  const sigBuf = Buffer.from(signature, "utf8");
-  const cmpBuf = Buffer.from(computed, "utf8");
-  if (sigBuf.length !== cmpBuf.length) return false;
-  return crypto.timingSafeEqual(sigBuf, cmpBuf);
+  if (!signature || webhookSecrets.length === 0) return false;
+  for (const secret of webhookSecrets) {
+    const computed = crypto
+      .createHmac("sha256", secret)
+      .update(body)
+      .digest("hex");
+    const sigBuf = Buffer.from(signature, "utf8");
+    const cmpBuf = Buffer.from(computed, "utf8");
+    if (sigBuf.length === cmpBuf.length && crypto.timingSafeEqual(sigBuf, cmpBuf)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function extractTranscriptText(raw: unknown): string {
