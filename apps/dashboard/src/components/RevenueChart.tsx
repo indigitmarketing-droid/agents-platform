@@ -5,11 +5,13 @@ import type { AgentEvent } from "@/types/events";
 interface RevenueChartProps { events: AgentEvent[]; }
 
 export function RevenueChart({ events }: RevenueChartProps) {
-  const salesEvents = events.filter((e) => e.type === "setting.sale_completed");
+  // Sales = customer.onboarded events (Stripe payment.succeeded → auth.user creation)
+  const salesEvents = events.filter((e) => e.type === "customer.onboarded");
   const dailyRevenue = new Map<string, number>();
   let cumulative = 0;
   const dataPoints: { date: string; revenue: number; cumulative: number }[] = [];
 
+  // Initialize last 30 days with 0
   for (let i = 29; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -19,7 +21,9 @@ export function RevenueChart({ events }: RevenueChartProps) {
   for (const event of salesEvents) {
     const day = event.created_at?.split("T")[0];
     if (day && dailyRevenue.has(day)) {
-      const amount = (event.payload as Record<string, number>)?.amount || 0;
+      // amount is in dollars (USD), set by Stripe webhook from session.amount_total/100
+      // Fallback to 349 if older events emitted before amount field added
+      const amount = (event.payload as Record<string, number>)?.amount ?? 349;
       dailyRevenue.set(day, (dailyRevenue.get(day) || 0) + amount);
     }
   }
@@ -38,7 +42,8 @@ export function RevenueChart({ events }: RevenueChartProps) {
       <div className="flex justify-between items-start mb-4">
         <div>
           <div className="text-sm font-semibold">Fatturato Generato</div>
-          <div className="text-[22px] font-bold text-accent-light">€{cumulative.toLocaleString("it-IT")}</div>
+          <div className="text-[22px] font-bold text-accent-light">${cumulative.toLocaleString("en-US")}</div>
+          <div className="text-[11px] text-muted mt-0.5">Ultimi 30 giorni — {salesEvents.length} pagamenti</div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={160}>
@@ -51,7 +56,7 @@ export function RevenueChart({ events }: RevenueChartProps) {
           </defs>
           <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#52525b" }} axisLine={false} tickLine={false} interval={6} />
           <YAxis hide />
-          <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(139,92,246,0.3)", borderRadius: "8px", fontSize: "12px" }} formatter={(value) => [`€${Number(value).toLocaleString("it-IT")}`, "Cumulativo"]} />
+          <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(139,92,246,0.3)", borderRadius: "8px", fontSize: "12px" }} formatter={(value) => [`$${Number(value).toLocaleString("en-US")}`, "Cumulativo"]} />
           <Area type="monotone" dataKey="cumulative" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#revenueGrad)" />
         </AreaChart>
       </ResponsiveContainer>

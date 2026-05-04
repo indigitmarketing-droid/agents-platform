@@ -207,6 +207,10 @@ async function handleCheckoutCompleted(
     site_id: siteId,
   }).eq("stripe_event_id", eventId);
 
+  // amount_total is in cents (Stripe convention) — convert to dollars for dashboard
+  const amountUsd = (session.amount_total ?? 0) / 100;
+  const currency = (session.currency ?? "usd").toUpperCase();
+
   await supabase.from("events").insert({
     type: "customer.onboarded",
     source_agent: "dashboard",
@@ -216,6 +220,8 @@ async function handleCheckoutCompleted(
       email: lead.email,
       paid_at: new Date().toISOString(),
       email_sent: emailSent,
+      amount: amountUsd,
+      currency,
     },
     status: "pending",
   });
