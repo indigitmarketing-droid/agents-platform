@@ -351,7 +351,25 @@ class SettingAgent(BaseAgent):
             try:
                 checkout_url, session_id = create_stripe_checkout(site, lead)
             except Exception as e:
+                err_msg = f"StripeCheckoutError: {type(e).__name__}: {e}"
                 logger.error(f"Stripe checkout creation failed for site {site_id}: {e}")
+                # Persist to call_log.error for DB visibility
+                try:
+                    sales_call = (
+                        self._client.table("call_logs")
+                        .select("id")
+                        .eq("lead_id", site["lead_id"])
+                        .eq("call_type", "site_ready_call")
+                        .order("started_at", desc=True)
+                        .limit(1)
+                        .execute()
+                    )
+                    if sales_call.data:
+                        self._client.table("call_logs").update({
+                            "error": err_msg,
+                        }).eq("id", sales_call.data[0]["id"]).execute()
+                except Exception:
+                    pass
                 return []
             self._client.table("sites").update({
                 "stripe_checkout_session_id": session_id,
