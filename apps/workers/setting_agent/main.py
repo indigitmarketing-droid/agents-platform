@@ -309,16 +309,39 @@ class SettingAgent(BaseAgent):
         if not lead:
             return []
 
+        sales_brief = None
+        analysis_error = None
         try:
             analysis = analyze_sales_transcript(transcript, lead, self._claude)
             outcome = analysis["outcome"]
-        except AnalysisError:
+            sales_brief = analysis.get("sales_brief")
+        except AnalysisError as e:
             outcome = "unclear"
+            analysis_error = f"AnalysisError: {e}"
         except Exception as e:
-            # Anthropic API failures (credit out, rate limit, network) → fallback to unclear
-            # rather than dead-letter the event. Operator can investigate via logs.
             logger.error(f"Unexpected error analyzing sales transcript for site {site_id}: {e}")
             outcome = "unclear"
+            analysis_error = f"{type(e).__name__}: {e}"
+
+        # Persist analysis details on call_log for ops visibility (latest sales call for this site)
+        try:
+            sales_call = (
+                self._client.table("call_logs")
+                .select("id")
+                .eq("lead_id", site["lead_id"])
+                .eq("call_type", "site_ready_call")
+                .order("started_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if sales_call.data:
+                self._client.table("call_logs").update({
+                    "call_brief": {"sales_brief": sales_brief, "outcome": outcome},
+                    "error": analysis_error,
+                    "analyzed_at": datetime.now(timezone.utc).isoformat(),
+                }).eq("id", sales_call.data[0]["id"]).execute()
+        except Exception as e:
+            logger.warning(f"Failed to persist sales analysis details: {e}")
 
         self._client.table("sites").update({
             "sales_call_outcome": outcome,
