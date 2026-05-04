@@ -314,6 +314,11 @@ class SettingAgent(BaseAgent):
             outcome = analysis["outcome"]
         except AnalysisError:
             outcome = "unclear"
+        except Exception as e:
+            # Anthropic API failures (credit out, rate limit, network) → fallback to unclear
+            # rather than dead-letter the event. Operator can investigate via logs.
+            logger.error(f"Unexpected error analyzing sales transcript for site {site_id}: {e}")
+            outcome = "unclear"
 
         self._client.table("sites").update({
             "sales_call_outcome": outcome,
