@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Buoni Pasto — La Guida Definitiva alla Deducibilità</title>
+<style>
+  :root{
+    --red:        #E11D2E;
+    --red-deep:   #8B0F1A;
+    --red-dark:   #4A0810;
+    --ink:        #0B0B0F;
+    --ink-2:      #121218;
+    --ink-3:      #1A1A22;
+    --paper:      #F7F5F2;
+    --white:      #FFFFFF;
+    --grey:       #A8A8B3;
+    --grey-2:     #6E6E7A;
+    --line:       rgba(255,255,255,.10);
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    font-family:'Inter',sans-serif;
+    font-size:10.5pt; line-height:1.55; color:var(--white);
+    background:var(--ink);
+  }
+  @page{ size:A4; margin:0; }
+
+  .page{
+    position:relative; width:210mm; height:297mm;
+    overflow:hidden; page-break-after:always;
+    background:var(--ink);
+  }
+  .page:last-child{ page-break-after:auto; }
+
+  /* ============ premium background layers ============ */
+  .bg-radial{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 90% 55% at 85% -10%, rgba(225,29,46,.22), transparent 60%),
+      radial-gradient(ellipse 70% 45% at -10% 105%, rgba(139,15,26,.20), transparent 60%),
+      linear-gradient(160deg, #121218 0%, #0B0B0F 55%, #0D0A0C 100%);
+  }
+  .bg-grid{
+    position:absolute; inset:0; opacity:.35;
+    background-image:
+      linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
+    background-size:14mm 14mm;
+  }
+  .bg-noise{
+    position:absolute; inset:0; opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .edge-glow{
+    position:absolute; left:0; top:0; bottom:0; width:2.2mm;
+    background:linear-gradient(180deg, var(--red) 0%, var(--red-deep) 45%, transparent 90%);
+  }
+  .corner-ring{
+    position:absolute; border-radius:50%;
+    border:1px solid rgba(225,29,46,.25);
+  }
+
+  .content{ position:relative; z-index:2; padding:20mm 18mm 24mm; height:100%; }
+
+  /* ============ typography ============ */
+  .serif{ font-family:'Playfair Display',serif; }
+  .kicker{
+    font-size:8pt; font-weight:700; letter-spacing:.32em; text-transform:uppercase;
+    color:var(--red); display:flex; align-items:center; gap:4mm;
+  }
+  .kicker::before{ content:''; display:block; width:12mm; height:1.5px;
+    background:linear-gradient(90deg,var(--red),transparent); }
+  h1{ font-family:'Playfair Display',serif; font-weight:800; }
+  h2.section{
+    font-family:'Playfair Display',serif; font-size:26pt; font-weight:800;
+    line-height:1.12; margin:5mm 0 3mm; letter-spacing:-.01em;
+  }
+  h2.section em{ font-style:italic; color:var(--red); }
+  .lead{ font-size:11.5pt; color:var(--grey); font-weight:300; max-width:150mm; }
+  .accent{ color:var(--red); }
+
+  /* ============ shared components ============ */
+  .rule{ height:1px; background:linear-gradient(90deg,rgba(225,29,46,.6),var(--line),transparent); margin:6mm 0; }
+
+  .card{
+    background:linear-gradient(150deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
+    border:1px solid var(--line); border-radius:3mm;
+    padding:6mm 6mm; position:relative; overflow:hidden;
+  }
+  .card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:1.2px;
+    background:linear-gradient(90deg, var(--red), transparent 70%);
+  }
+  .card h3{ font-size:11pt; font-weight:700; margin-bottom:2mm; color:var(--white); }
+  .card p{ font-size:9.3pt; color:var(--grey); }
+
+  .stat{
+    font-family:'Playfair Display',serif; font-size:30pt; font-weight:800;
+    background:linear-gradient(120deg,#FF4D5E,var(--red) 55%,#B0111F);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    line-height:1;
+  }
+  .stat-label{ font-size:8pt; letter-spacing:.18em; text-transform:uppercase; color:var(--grey); margin-top:2mm; }
+
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:5mm; }
+  .grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:5mm; }
+
+  .footer{
+    position:absolute; bottom:10mm; left:18mm; right:18mm; z-index:3;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:7.5pt; letter-spacing:.22em; text-transform:uppercase; color:var(--grey-2);
+    border-top:1px solid var(--line); padding-top:3.5mm;
+  }
+  .footer .pn{ color:var(--red); font-weight:700; }
+
+  table{ width:100%; border-collapse:collapse; font-size:9.3pt; }
+  th{
+    text-align:left; font-size:7.6pt; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--red); font-weight:700; padding:3mm 4mm; border-bottom:1.5px solid rgba(225,29,46,.5);
+  }
+  td{ padding:3.2mm 4mm; border-bottom:1px solid var(--line); color:var(--grey); vertical-align:top; }
+  td:first-child{ color:var(--white); font-weight:600; }
+  tr.hl td{ background:rgba(225,29,46,.08); color:var(--white); }
+  .num{ font-variant-numeric:tabular-nums; text-align:right; }
+  th.num{ text-align:right; }
+
+  .check li, .cross li{
+    list-style:none; padding-left:8mm; position:relative; margin-bottom:3mm;
+    font-size:9.5pt; color:var(--grey);
+  }
+  .check li strong, .cross li strong{ color:var(--white); }
+  .check li::before{
+    content:'✓'; position:absolute; left:0; top:0; width:5mm; height:5mm;
+    border-radius:1.2mm; background:linear-gradient(135deg,var(--red),var(--red-deep));
+    color:#fff; font-size:8pt; font-weight:800; display:flex; align-items:center; justify-content:center;
+  }
+  .cross li::before{
+    content:'✕'; position:absolute; left:0; top:0; width:5mm; height:5mm;
+    border-radius:1.2mm; border:1px solid rgba(225,29,46,.6); color:var(--red);
+    font-size:8pt; font-weight:800; display:flex; align-items:center; justify-content:center;
+  }
+
+  .badge{
+    display:inline-block; font-size:7.5pt; font-weight:700; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--red); border:1px solid rgba(225,29,46,.55);
+    border-radius:99px; padding:1.6mm 4.5mm; background:rgba(225,29,46,.07);
+  }
+
+  .quote-band{
+    background:linear-gradient(120deg, var(--red-dark), #1A0508 60%);
+    border:1px solid rgba(225,29,46,.35); border-radius:3mm; padding:6mm 7mm;
+    position:relative; overflow:hidden;
+  }
+  .quote-band::after{
+    content:''; position:absolute; right:-18mm; top:-18mm; width:52mm; height:52mm;
+    border-radius:50%; background:radial-gradient(circle, rgba(225,29,46,.35), transparent 70%);
+  }
+  .quote-band p{ font-size:10pt; color:#F2D7DA; position:relative; z-index:1; }
+  .quote-band strong{ color:#fff; }
+
+  .stepnum{
+    font-family:'Playfair Display',serif; font-size:22pt; font-weight:800; line-height:1;
+    color:transparent; -webkit-text-stroke:1px var(--red); min-width:14mm;
+  }
+
+  /* ============ COVER ============ */
+  .cover .content{ display:flex; flex-direction:column; padding:22mm 18mm; }
+  .cover-topline{ display:flex; justify-content:space-between; align-items:center;
+    font-size:8pt; letter-spacing:.3em; text-transform:uppercase; color:var(--grey); }
+  .cover-logo{ display:flex; align-items:center; gap:3mm; color:var(--white); font-weight:800; letter-spacing:.24em; }
+  .logo-mark{ width:7mm; height:7mm; border-radius:2mm;
+    background:linear-gradient(135deg,var(--red),var(--red-deep));
+    display:flex; align-items:center; justify-content:center; font-size:10pt; }
+  .cover h1{
+    font-size:47pt; line-height:1.04; letter-spacing:-.015em; margin:8mm 0 6mm;
+  }
+  .cover h1 .red-grad{
+    background:linear-gradient(110deg,#FF5563,var(--red) 50%,#9E0E1B);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .cover h1 em{ font-style:italic; font-weight:600; }
+  .cover-sub{ font-size:12.5pt; font-weight:300; color:var(--grey); max-width:140mm; line-height:1.6; }
+  .cover-chips{ display:flex; gap:3mm; margin-top:8mm; flex-wrap:wrap; }
+  .cover-bottom{ margin-top:auto; display:flex; justify-content:space-between; align-items:flex-end; }
+  .cover-meta{ font-size:8pt; letter-spacing:.26em; text-transform:uppercase; color:var(--grey-2); line-height:2.1; }
+  .cover-meta b{ color:var(--white); }
+  .voucher{
+    width:64mm; padding:6mm; border-radius:3.5mm; transform:rotate(-4deg);
+    background:linear-gradient(135deg,#E11D2E 0%,#8B0F1A 80%);
+    box-shadow:0 10mm 18mm rgba(225,29,46,.28), inset 0 1px 0 rgba(255,255,255,.35);
+    position:relative;
+  }
+  .voucher::before, .voucher::after{
+    content:''; position:absolute; width:6mm; height:6mm; border-radius:50%;
+    background:var(--ink); top:50%; margin-top:-3mm;
+  }
+  .voucher::before{ left:-3mm; } .voucher::after{ right:-3mm; }
+  .voucher .v-top{ display:flex; justify-content:space-between; font-size:6.5pt;
+    letter-spacing:.22em; text-transform:uppercase; color:rgba(255,255,255,.85); }
+  .voucher .v-amount{ font-family:'Playfair Display',serif; font-size:26pt; font-weight:800; color:#fff; margin:2.5mm 0 1mm; }
+  .voucher .v-dash{ border-top:1.5px dashed rgba(255,255,255,.5); margin:2.5mm 0; }
+  .voucher .v-note{ font-size:6.8pt; color:rgba(255,255,255,.85); letter-spacing:.08em; }
+
+  /* ============ TOC ============ */
+  .toc-item{ display:flex; align-items:baseline; gap:4mm; padding:4.2mm 0; border-bottom:1px solid var(--line); }
+  .toc-num{ font-family:'Playfair Display',serif; font-size:15pt; font-weight:800; color:transparent;
+    -webkit-text-stroke:1px var(--red); min-width:11mm; }
+  .toc-item .t{ font-size:11.5pt; font-weight:600; color:var(--white); }
+  .toc-item .d{ font-size:8.6pt; color:var(--grey-2); margin-left:auto; text-align:right; max-width:62mm; }
+
+  .disclaimer{
+    font-size:7.6pt; color:var(--grey-2); line-height:1.6;
+    border-left:2px solid rgba(225,29,46,.5); padding-left:4mm;
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1 · COVER ================= -->
+<div class="page cover">
+  <div class="bg-radial"></div><div class="bg-grid"></div><div class="bg-noise"></div>
+  <div class="corner-ring" style="width:120mm;height:120mm;right:-40mm;top:-40mm;"></div>
+  <div class="corner-ring" style="width:80mm;height:80mm;right:-20mm;top:-20mm;border-color:rgba(225,29,46,.4);"></div>
+  <div class="edge-glow"></div>
+  <div class="content">
+    <div class="cover-topline">
+      <div class="cover-logo"><div class="logo-mark serif">B</div>GUIDA&nbsp;FISCALE</div>
+      <div>Edizione 2026 · Guida gratuita</div>
+    </div>
+
+    <div style="margin-top:24mm;">
+      <div class="kicker">Per imprenditori &amp; PMI italiane</div>
+      <h1>Buoni Pasto:<br><span class="red-grad">deduci al 100%</span><br>i costi <em>aziendali</em></h1>
+      <p class="cover-sub">La guida pratica per trasformare la pausa pranzo in un vantaggio fiscale:
+      deducibilità totale, IVA detraibile, zero contributi entro le soglie di esenzione.
+      Con esempi numerici, tabelle comparative e i 5 passi per partire subito.</p>
+      <div class="cover-chips">
+        <span class="badge">Deducibilità 100%</span>
+        <span class="badge">Esenzione fino a 10€/giorno</span>
+        <span class="badge">Zero oneri contributivi</span>
+      </div>
+    </div>
+
+    <div class="cover-bottom">
+      <div class="cover-meta">
+        <b>Contenuti</b> · 8 pagine operative<br>
+        <b>Lettura</b> · 12 minuti<br>
+        <b>Aggiornata</b> · Legge di Bilancio 2026
+      </div>
+      <div class="voucher">
+        <div class="v-top"><span>Buono Pasto</span><span>Elettronico</span></div>
+        <div class="v-amount">€ 10,00</div>
+        <div class="v-dash"></div>
+        <div class="v-note">ESENTE DA TASSE E CONTRIBUTI · DEDUCIBILE 100%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PAGE 2 · INDICE ================= -->
+<div class="page">
+  <div class="bg-radial"></div><div class="bg-grid"></div><div class="bg-noise"></div>
+  <div class="edge-glow"></div>
+  <div class="content">
+    <div class="kicker">Indice</div>
+    <h2 class="section">Cosa troverai in <em>questa guida</em></h2>
+    <p class="lead">Ogni euro speso in buoni pasto è un euro che lavora due volte: motiva le persone e riduce le imposte. Ecco il percorso.</p>
+
+    <div style="margin-top:8mm;">
+      <div class="toc-item"><div class="toc-num">01</div><div class="t">Cosa sono i buoni pasto</div><div class="d">Il quadro normativo e le soglie di esenzione 2026</div></div>
+      <div class="toc-item"><div class="toc-num">02</div><div class="t">I 4 vantaggi fiscali</div><div class="d">Deducibilità, IVA, contributi e cuneo fiscale</div></div>
+      <div class="toc-item"><div class="toc-num">03</div><div class="t">Il calcolo del risparmio</div><div class="d">Esempio reale: 10 dipendenti, numeri alla mano</div></div>
+      <div class="toc-item"><div class="toc-num">04</div><div class="t">Chi ne ha diritto</div><div class="d">Dipendenti, collaboratori, amministratori e titolari</div></div>
+      <div class="toc-item"><div class="toc-num">05</div><div class="t">Come partire in 5 passi</div><div class="d">Dal provider alla busta paga, senza errori</div></div>
+      <div class="toc-item"><div class="toc-num">06</div><div class="t">Errori da evitare &amp; FAQ</div><div class="d">Le trappole che fanno perdere l'esenzione</div></div>
+    </div>
+
+    <div class="quote-band" style="margin-top:10mm;">
+      <p><strong>Perché ora?</strong> Dal 1° gennaio 2026 la soglia di esenzione dei buoni pasto elettronici
+      sale a <strong>10 € al giorno</strong>: oltre 2.200 € l'anno per persona completamente
+      esenti da tasse e contributi. È uno degli strumenti di welfare più efficienti che
+      un'impresa italiana possa attivare.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Guida ai Buoni Pasto · 2026</span><span class="pn">02</span></div>
+</div>
+
+<!-- ================= PAGE 3 · COSA SONO ================= -->
+<div class="page">
+  <div class="bg-radial"></div><div class="bg-grid"></div><div class="bg-noise"></div>
+  <div class="edge-glow"></div>
+  <div class="content">
+    <div class="kicker">Capitolo 01</div>
+    <h2 class="section">Cosa sono i buoni pasto <em>(e cosa dice la legge)</em></h2>
+    <p class="lead">Il buono pasto è un servizio sostitutivo di mensa: un titolo — cartaceo o elettronico —
+    che il dipendente usa per acquistare pasti o prodotti alimentari in bar, ristoranti,
+    supermercati e gastronomie convenzionate.</p>
+
+    <div class="rule"></div>
+
+    <div class="grid-3">
+      <div class="card" style="text-align:left;">
+        <div class="stat">4€</div>
+        <div class="stat-label">Esenzione giornaliera<br>buono cartaceo</div>
+      </div>
+      <div class="card" style="text-align:left;">
+        <div class="stat">10€</div>
+        <div class="stat-label">Esenzione giornaliera<br>buono elettronico · dal 2026</div>
+      </div>
+      <div class="card" style="text-align:left;">
+        <div class="stat">100%</div>
+        <div class="stat-label">Deducibilità del costo<br>per l'azienda</div>
+      </div>
+    </div>
+
+    <h3 style="margin:8mm 0 3mm; font-size:12pt;">Le fonti normative essenziali</h3>
+    <table>
+      <tr><th style="width:38mm;">Norma</th><th>Cosa stabilisce</th></tr>
+      <tr><td>Art. 51, c. 2, lett. c) TUIR</td><td>I buoni pasto non concorrono al reddito del dipendente fino a 4 € (cartacei) e 10 € (elettronici, soglia elevata dalla Legge di Bilancio 2026) per giornata lavorativa.</td></tr>
+      <tr><td>Art. 95 TUIR</td><td>Per l'impresa i buoni pasto sono spese per prestazioni di lavoro: <strong>interamente deducibili</strong> dal reddito d'impresa.</td></tr>
+      <tr><td>DPR 633/1972</td><td>IVA agevolata al <strong>4%</strong> sui buoni pasto destinati ai dipendenti, detraibile per l'azienda.</td></tr>
+      <tr><td>D.M. 122/2017 (MiSE)</td><td>Regole d'uso: non cedibili, non convertibili in denaro, cumulabili fino a 8 buoni, utilizzabili per l'intero valore facciale.</td></tr>
+    </table>
+
+    <div class="quote-band" style="margin-top:7mm;">
+      <p><strong>Il punto chiave:</strong> entro le soglie, il buono pasto è l'unico "aumento" che arriva
+      al collaboratore al 100% del suo valore — senza IRPEF, senza contributi INPS,
+      né a carico del lavoratore né dell'azienda.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Guida ai Buoni Pasto · 2026</span><span class="pn">03</span></div>
+</div>
+
+<!-- ================= PAGE 4 · VANTAGGI FISCALI ================= -->
+<div class="page">
+  <div class="bg-radial"></div><div class="bg-grid"></div><div class="bg-noise"></div>
+  <div class="edge-glow"></div>
+  <div class="content">
+    <div class="kicker">Capitolo 02</div>
+    <h2 class="section">I 4 vantaggi fiscali <em>per la tua azienda</em></h2>
+
+    <div class="grid-2" style="margin-top:6mm;">
+      <div class="card">
+        <div class="stat" style="font-size:20pt;">01</div>
+        <h3 style="margin-top:2mm;">Deducibilità totale del costo</h3>
+        <p>I buoni pasto per dipendenti e collaboratori sono spese per prestazioni di lavoro (art. 95 TUIR):
+        <strong style="color:#fff;">deducibili al 100%</strong> da IRES/IRPEF e rilevanti anche ai fini IRAP.
+        Nessun limite del 75% previsto per le normali spese di ristorazione.</p>
+      </div>
+      <div class="card">
+        <div class="stat" style="font-size:20pt;">02</div>
+        <h3 style="margin-top:2mm;">IVA al 4% e detraibile</h3>
+        <p>Sull'acquisto dei buoni destinati ai dipendenti si applica l'IVA agevolata del 4%,
+        <strong style="color:#fff;">interamente detraibile</strong>. Il costo effettivo per l'azienda
+        resta di fatto il valore nominale del buono, spesso ridotto dagli sconti dei provider.</p>
+      </div>
+      <div class="card">
+        <div class="stat" style="font-size:20pt;">03</div>
+        <h3 style="margin-top:2mm;">Zero contributi entro le soglie</h3>
+        <p>Fino a 4 € (cartaceo) o 10 € (elettronico) al giorno il buono è
+        <strong style="color:#fff;">esente da contributi INPS e premi INAIL</strong>:
+        non entra nell'imponibile previdenziale né in quello fiscale del lavoratore.</p>
+      </div>
+      <div class="card">
+        <div class="stat" style="font-size:20pt;">04</div>
+        <h3 style="margin-top:2mm;">Cuneo fiscale abbattuto</h3>
+        <p>Un aumento lordo in busta paga arriva al dipendente dimezzato da tasse e contributi.
+        Il buono pasto arriva <strong style="color:#fff;">al 100% del valore</strong>:
+        a parità di beneficio netto, l'azienda spende quasi la metà.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:8mm 0 3mm; font-size:12pt;">Buono pasto vs. aumento in busta paga <span class="accent">— stesso beneficio netto</span></h3>
+    <table>
+      <tr><th>Voce</th><th class="num">Aumento in busta</th><th class="num">Buono pasto elettronico</th></tr>
+      <tr><td>Netto percepito dal dipendente / mese</td><td class="num">≈ 180 €</td><td class="num">200 € (10 € × 20 gg)</td></tr>
+      <tr><td>Lordo necessario</td><td class="num">≈ 330 €</td><td class="num">200 €</td></tr>
+      <tr><td>Contributi a carico azienda (~30%)</td><td class="num">≈ 99 €</td><td class="num">0 €</td></tr>
+      <tr><td>Costo azienda ante imposte</td><td class="num">≈ 429 €</td><td class="num">200 €</td></tr>
+      <tr class="hl"><td>Costo netto dopo deduzione (IRES 24% + IRAP)</td><td class="num">≈ 315 €</td><td class="num"><strong>≈ 144 €</strong></td></tr>
+    </table>
+    <p style="font-size:8pt; color:var(--grey-2); margin-top:2.5mm;">Valori indicativi a scopo illustrativo; aliquote e contributi variano per settore, CCNL e inquadramento.</p>
+  </div>
+  <div class="footer"><span>Guida ai Buoni Pasto · 2026</span><span class="pn">04</span></div>
+</div>
+
+<!-- ================= PAGE 5 · CALCOLO RISPARMIO ================= -->
+<div class="page">
+  <div class="bg-radial"></div><div class="bg-grid"></div><div class="bg-noise"></div>
+  <div class="edge-glow"></div>
+  <div class="content">
+    <div class="kicker">Capitolo 03</div>
+    <h2 class="section">Il calcolo del risparmio: <em>un caso reale</em></h2>
+    <p class="lead">Impresa con 10 dipendenti full-time. Buono pasto elettronico da 8 € per ogni giornata
+    lavorata, 220 giornate l'anno.</p>
+
+    <div class="grid-3" style="margin-top:6mm;">
+      <div class="card"><div class="stat" style="font-size:22pt;">17.600€</div><div class="stat-label">Spesa annua totale<br>(10 × 8 € × 220 gg)</div></div>
+      <div class="card"><div class="stat" style="font-size:22pt;">~4.900€</div><div class="stat-label">Minori imposte<br>(deduzione IRES + IRAP)</div></div>
+      <div class="card"><div class="stat" style="font-size:22pt;">1.760€</div><div class="stat-label">Benefit netto annuo<br>per ciascun dipendente</div></div>
+    </div>
+
+    <h3 style="margin:8mm 0 3mm; font-size:12pt;">Il conto economico dell'operazione</h3>
+    <table>
+      <tr><th>Voce</th><th class="num">Importo annuo</th></tr>
+      <tr><td>Acquisto buoni pasto (10 dipendenti × 8 € × 220 gg)</td><td class="num">17.600 €</td></tr>
+      <tr><td>IVA 4% (704 €) — detraibile</td><td class="num">0 € di costo effettivo</td></tr>
+      <tr><td>Contributi INPS / INAIL sui buoni</td><td class="num">0 €</td></tr>
+      <tr><td>Tasse a carico dei dipendenti</td><td class="num">0 €</td></tr>
+      <tr><td>Risparmio fiscale da deduzione (aliquota ~27,9%)</td><td class="num">− 4.910 €</td></tr>
+      <tr class="hl"><td>Costo netto reale per l'azienda</td><td class="num"><strong>≈ 12.690 €</strong></td></tr>
+      <tr class="hl"><td>Valore percepito dai dipendenti</td><td class="num"><strong>17.600 € (100%)</strong></td></tr>
+    </table>
+
+    <div class="quote-band" style="margin-top:7mm;">
+      <p><strong>In sintesi:</strong> per erogare lo stesso beneficio netto tramite busta paga
+      l'azienda avrebbe speso oltre <strong>30.000 €</strong>. Con i buoni pasto il costo reale
+      scende a circa <strong>12.700 €</strong>: un'efficienza superiore al <strong>50%</strong>,
+      con un impatto diretto su retention e clima aziendale.</p>
+    </div>
+
+    <p class="disclaimer" style="margin-top:6mm;">Simulazione a scopo illustrativo con IRES 24% e IRAP 3,9%.
+    Il risparmio effettivo dipende dalla forma giuridica, dall'aliquota marginale e dalla regione.
+    Verifica sempre i numeri con il tuo commercialista.</p>
+  </div>
+  <div class="footer"><span>Guida ai Buoni Pasto · 2026</span><span class="pn">05</span></div>
+</div>
+
+<!-- ================= PAGE 6 · CHI NE HA DIRITTO ================= -->
+<div class="page">
+  <div class="bg-radial"></div><div class="bg-grid"></div><div class="bg-noise"></div>
+  <div class="edge-glow"></div>
+  <div class="content">
+    <div class="kicker">Capitolo 04</div>
+    <h2 class="section">Chi può riceverli <em>(e con quali regole)</em></h2>
+
+    <div class="grid-2" style="margin-top:5mm;">
+      <div>
+        <h3 style="font-size:11.5pt; margin-bottom:3.5mm;">✓ &nbsp;Beneficio pieno</h3>
+        <ul class="check">
+          <li><strong>Dipendenti a tempo pieno</strong> — per ogni giornata di lavoro, anche in smart working.</li>
+          <li><strong>Part-time</strong> — anche se l'orario non prevede la pausa pranzo (Ris. AE 118/E/2006).</li>
+          <li><strong>Collaboratori e co.co.co.</strong> — redditi assimilati a lavoro dipendente.</li>
+          <li><strong>Amministratori con compenso</strong> — se il rapporto è assimilato al lavoro dipendente.</li>
+          <li><strong>Stagisti e tirocinanti</strong> — assimilati ai fini dell'esenzione.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="font-size:11.5pt; margin-bottom:3.5mm;">✕ &nbsp;Attenzione</h3>
+        <ul class="cross">
+          <li><strong>Titolare / imprenditore individuale</strong> — per sé stesso non vale l'art. 51: i pasti seguono la regola ordinaria (deducibili al 75%).</li>
+          <li><strong>Soci non lavoratori</strong> — nessuna esenzione: rischio di compenso in natura tassato.</li>
+          <li><strong>Professionisti per sé stessi</strong> — deducibilità 75% nel limite del 2% dei compensi.</li>
+          <li><strong>Eccedenza oltre soglia</strong> — la parte oltre 4/10 € è reddito tassato e imponibile.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <h3 style="font-size:12pt; margin-bottom:3mm;">Le regole d'oro del D.M. 122/2017</h3>
+    <div class="grid-2">
+      <div class="card"><h3>Non convertibili né cedibili</h3><p>Il buono non può essere trasformato in denaro né ceduto a terzi: è nominativo e spetta solo al beneficiario.</p></div>
+      <div class="card"><h3>Cumulo massimo: 8 buoni</h3><p>Si possono usare fino a 8 buoni in un'unica transazione — utile per la spesa al supermercato.</p></div>
+      <div class="card"><h3>Un buono per giornata lavorata</h3><p>Matura solo nei giorni di effettiva presenza (o smart working): niente buoni per ferie, malattia o trasferte con rimborso pasti.</p></div>
+      <div class="card"><h3>Rete convenzionata</h3><p>Spendibili in ristoranti, bar, supermercati, gastronomie e mense convenzionate con il provider scelto.</p></div>
+    </div>
+
+    <div class="quote-band" style="margin-top:7mm;">
+      <p><strong>Nota per le società:</strong> l'esenzione non richiede accordi sindacali né l'estensione
+      a tutto il personale — ma una <strong>policy scritta</strong> con criteri oggettivi
+      (es. per sede o reparto) protegge l'azienda in caso di verifica.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Guida ai Buoni Pasto · 2026</span><span class="pn">06</span></div>
+</div>
+
+<!-- ================= PAGE 7 · 5 PASSI ================= -->
+<div class="page">
+  <div class="bg-radial"></div><div class="bg-grid"></div><div class="bg-noise"></div>
+  <div class="edge-glow"></div>
+  <div class="content">
+    <div class="kicker">Capitolo 05</div>
+    <h2 class="section">Come partire <em>in 5 passi</em></h2>
+
+    <div style="margin-top:6mm; display:flex; flex-direction:column; gap:4.5mm;">
+      <div class="card" style="display:flex; gap:5mm; align-items:flex-start;">
+        <div class="stepnum">1</div>
+        <div><h3>Definisci valore e platea</h3>
+        <p>Scegli l'importo giornaliero (il valore ottimale è la soglia esente: 10 € elettronico) e i beneficiari.
+        Formalizza tutto in una policy o in un regolamento aziendale.</p></div>
+      </div>
+      <div class="card" style="display:flex; gap:5mm; align-items:flex-start;">
+        <div class="stepnum">2</div>
+        <div><h3>Scegli il provider</h3>
+        <p>Confronta i principali emettitori (Edenred, Pellegrini, Sodexo/Pluxee, Day, Repas…):
+        valuta rete di locali convenzionati nella tua zona, commissioni, app e sconti sui volumi.</p></div>
+      </div>
+      <div class="card" style="display:flex; gap:5mm; align-items:flex-start;">
+        <div class="stepnum">3</div>
+        <div><h3>Preferisci l'elettronico</h3>
+        <p>Soglia esente più che doppia (10 € vs 4 €), tracciabilità totale, niente carnet da distribuire,
+        ricariche mensili automatiche in base alle presenze.</p></div>
+      </div>
+      <div class="card" style="display:flex; gap:5mm; align-items:flex-start;">
+        <div class="stepnum">4</div>
+        <div><h3>Allinea paghe e contabilità</h3>
+        <p>Comunica al consulente del lavoro l'attivazione: i buoni vanno esposti in busta paga come
+        voce non imponibile e registrati in contabilità tra i costi per il personale.</p></div>
+      </div>
+      <div class="card" style="display:flex; gap:5mm; align-items:flex-start;">
+        <div class="stepnum">5</div>
+        <div><h3>Monitora e comunica</h3>
+        <p>Verifica ogni mese la corrispondenza buoni ↔ giornate lavorate e comunica il benefit al team:
+        un welfare non percepito è un welfare sprecato.</p></div>
+      </div>
+    </div>
+
+    <div class="quote-band" style="margin-top:7mm;">
+      <p><strong>Tempo di attivazione tipico:</strong> 1–2 settimane dalla firma del contratto con il provider.
+      Nessun investimento iniziale: paghi solo i buoni che ordini.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Guida ai Buoni Pasto · 2026</span><span class="pn">07</span></div>
+</div>
+
+<!-- ================= PAGE 8 · ERRORI, FAQ, CTA ================= -->
+<div class="page">
+  <div class="bg-radial"></div><div class="bg-grid"></div><div class="bg-noise"></div>
+  <div class="edge-glow"></div>
+  <div class="content">
+    <div class="kicker">Capitolo 06</div>
+    <h2 class="section">Errori da evitare <em>&amp; FAQ</em></h2>
+
+    <div class="grid-2" style="margin-top:5mm;">
+      <ul class="cross" style="margin-top:1mm;">
+        <li><strong>Superare la soglia esente</strong> senza saperlo: l'eccedenza è tassata e contribuita come retribuzione.</li>
+        <li><strong>Erogare buoni nei giorni non lavorati</strong> (ferie, malattia): fa perdere la natura di servizio sostitutivo di mensa.</li>
+        <li><strong>Cumulare buono pasto e rimborso pasto</strong> per la stessa giornata di trasferta: doppio beneficio non ammesso.</li>
+        <li><strong>Nessuna policy scritta</strong>: criteri arbitrari indeboliscono la posizione aziendale in caso di controllo.</li>
+      </ul>
+      <div>
+        <div class="card" style="margin-bottom:4mm;"><h3>I buoni valgono in smart working?</h3>
+        <p>Sì. L'Agenzia delle Entrate ha confermato che l'esenzione spetta anche per le giornate di lavoro agile.</p></div>
+        <div class="card" style="margin-bottom:4mm;"><h3>Servono per forza a tutti?</h3>
+        <p>No: puoi riconoscerli anche a categorie omogenee di lavoratori, purché con criteri oggettivi e non discriminatori.</p></div>
+        <div class="card"><h3>Scadono?</h3>
+        <p>Sì, hanno una validità indicata dal provider (di norma l'anno di emissione o oltre). L'elettronico semplifica il monitoraggio.</p></div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="quote-band" style="padding:8mm 8mm;">
+      <div class="kicker" style="color:#FF8A94;">Prossimo passo</div>
+      <p class="serif" style="font-size:17pt; font-weight:800; line-height:1.25; margin-top:3mm; color:#fff;">
+        Trasforma la pausa pranzo<br>nel tuo prossimo vantaggio fiscale.</p>
+      <p style="margin-top:3.5mm;">Porta questa guida al tuo commercialista o consulente del lavoro e chiedi una simulazione
+      sui tuoi numeri: bastano organico, giornate lavorate e valore del buono per quantificare
+      il risparmio del primo anno.</p>
+    </div>
+
+    <p class="disclaimer" style="margin-top:7mm;">
+      <strong style="color:var(--grey);">Disclaimer</strong> — Questa guida ha finalità informative e divulgative e non costituisce
+      consulenza fiscale, contabile o legale. Le soglie e le aliquote citate riflettono la normativa nota alla data di
+      pubblicazione (Legge di Bilancio 2026) e possono variare: verifica sempre l'applicazione al tuo caso concreto
+      con un professionista abilitato.
+    </p>
+  </div>
+  <div class="footer"><span>Guida ai Buoni Pasto · 2026 · Guida gratuita</span><span class="pn">08</span></div>
+</div>
+
+</body>
+</html>
