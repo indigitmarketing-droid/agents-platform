@@ -36,6 +36,13 @@ def test_system_schema_loads():
     assert "system.agent_online" in schema["definitions"]
     assert "system.error" in schema["definitions"]
 
+def test_video_schema_loads():
+    schema = load_schema("video")
+    assert "definitions" in schema
+    assert "video.edit_requested" in schema["definitions"]
+    assert "video.generate_requested" in schema["definitions"]
+    assert "video.ready" in schema["definitions"]
+
 def test_lead_found_payload_has_required_fields():
     schema = load_schema("scraping")
     lead_found = schema["definitions"]["scraping.lead_found"]

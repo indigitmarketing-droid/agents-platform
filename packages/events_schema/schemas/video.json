@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "video.edit_requested": {
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string" },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "trim", "concat", "crop", "resize", "convert", "compress",
+            "speed", "watermark", "subtitles", "extract_audio",
+            "extract_thumbnail", "text"
+          ]
+        },
+        "params": { "type": "object" },
+        "input_path": { "type": "string" },
+        "input_paths": { "type": "array", "items": { "type": "string" } },
+        "output_path": { "type": "string" },
+        "reply_to": { "type": "string" }
+      },
+      "required": ["operation"]
+    },
+    "video.generate_requested": {
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string" },
+        "template": { "type": "string", "enum": ["slideshow"] },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "audio": { "type": "string" },
+        "options": { "type": "object" },
+        "output_path": { "type": "string" },
+        "reply_to": { "type": "string" }
+      },
+      "required": ["images"]
+    },
+    "video.processing_started": {
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string" }
+      },
+      "required": ["job_id"]
+    },
+    "video.ready": {
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string" },
+        "output_path": { "type": "string" },
+        "operation": { "type": "string" },
+        "template": { "type": "string" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["output_path"]
+    },
+    "video.failed": {
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string" },
+        "error": { "type": "string" }
+      },
+      "required": ["error"]
+    }
+  }
+}

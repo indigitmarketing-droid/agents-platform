@@ -26,6 +26,11 @@ class EventTypes:
     SYSTEM_AGENT_OFFLINE = "system.agent_offline"
     SYSTEM_AGENT_ONLINE = "system.agent_online"
     SYSTEM_ERROR = "system.error"
+    VIDEO_EDIT_REQUESTED = "video.edit_requested"
+    VIDEO_FAILED = "video.failed"
+    VIDEO_GENERATE_REQUESTED = "video.generate_requested"
+    VIDEO_PROCESSING_STARTED = "video.processing_started"
+    VIDEO_READY = "video.ready"
 
 
 class BuilderBlogPublishedPayload(BaseModel):
@@ -132,4 +137,41 @@ class SystemErrorPayload(BaseModel):
     agent_id: str
     error: str
     event_id: Optional[str] = None
+
+
+class VideoEditRequestedPayload(BaseModel):
+    job_id: Optional[str] = None
+    operation: str
+    params: Optional[dict] = None
+    input_path: Optional[str] = None
+    input_paths: Optional[list] = None
+    output_path: Optional[str] = None
+    reply_to: Optional[str] = None
+
+
+class VideoFailedPayload(BaseModel):
+    job_id: Optional[str] = None
+    error: str
+
+
+class VideoGenerateRequestedPayload(BaseModel):
+    job_id: Optional[str] = None
+    template: Optional[str] = None
+    images: list
+    audio: Optional[str] = None
+    options: Optional[dict] = None
+    output_path: Optional[str] = None
+    reply_to: Optional[str] = None
+
+
+class VideoProcessingStartedPayload(BaseModel):
+    job_id: str
+
+
+class VideoReadyPayload(BaseModel):
+    job_id: Optional[str] = None
+    output_path: str
+    operation: Optional[str] = None
+    template: Optional[str] = None
+    metadata: Optional[dict] = None
 
