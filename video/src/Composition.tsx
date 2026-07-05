@@ -21,7 +21,10 @@ import {
  *  - a consistent slow push-in so the energy stays even throughout
  *  - a subtle, consistent grade + vignette to unify the frame
  *
- * The original audio and the easyDent watermark are kept intact.
+ * The original audio and the easyDent watermark are kept intact. The source
+ * has one hidden jump-cut at ~7.36s whose seam produced an audible audio
+ * click; that click is repaired in public/easyDent_fixed.mp4 (adeclick + a
+ * smooth Gaussian volume notch on the seam) which is what we render from.
  */
 export const EasyDentEdit: React.FC = () => {
   const frame = useCurrentFrame();
@@ -66,7 +69,7 @@ export const EasyDentEdit: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       <AbsoluteFill style={{ opacity }}>
         <OffthreadVideo
-          src={staticFile("easyDent.mp4")}
+          src={staticFile("easyDent_fixed.mp4")}
           volume={volume}
           style={{
             width: "100%",
