@@ -1,86 +1,77 @@
-# Agenti Social per Lead Generation & Outreach — Struttura, Fattibilità e Programma
+# Agenti Social per Lead Generation & Outreach — Struttura, Fattibilità e Programma Operativo
 
 > **Documento strategico e tecnico** — Cliente esterno (progetto **stand-alone**, NON collegato alla `agents-platform`).
 > Obiettivo: costruire 6 agenti (Instagram, Scraping Instagram, LinkedIn, Scraping LinkedIn, WhatsApp, Google Scraping) per **reach-out + engagement verso lead freddi** e **ricerca/catalogazione lead** in una **nicchia di riferimento**.
-> Base di analisi: **API ufficiali** di ogni piattaforma, stato aggiornato a **luglio 2026**.
+> Base di analisi: **API ufficiali** di ogni piattaforma + **ManyChat** come layer di esecuzione. Stato aggiornato a **luglio 2026**.
 
 ---
 
 ## 0. Come leggere questo documento (legenda semaforo)
 
-Ogni funzionalità è classificata in base a **cosa consentono davvero le API ufficiali**:
-
 | Simbolo | Significato |
 |:---:|---|
 | 🟢 | **Conforme** — fattibile via API ufficiale, senza violare i Termini |
-| 🟡 | **Conforme con vincoli forti** — fattibile, ma richiede opt-in, budget pubblicitario, App Review o verifiche |
-| 🔴 | **NON consentito dall'API ufficiale** — l'obiettivo non è coperto; realizzabile solo con strumenti non ufficiali (rischio ban + legale) |
+| 🟡 | **Conforme con vincoli forti** — richiede opt-in, budget pubblicitario, App Review o verifiche |
+| 🔴 | **NON consentito dall'API ufficiale** — realizzabile solo con strumenti non ufficiali (rischio ban + legale) |
 
-> ⚠️ **Verità di fondo, da mettere subito sul tavolo con il cliente.**
-> Le API ufficiali di **Instagram** e **LinkedIn** **non permettono** il cold outreach di massa (DM non richiesti), l'auto-follow/like verso terzi, né lo scraping di follower e profili. Sono progettate per *customer care* e *advertising*, non per prospecting a freddo.
-> **WhatsApp** e **Google** invece offrono percorsi ufficiali solidi — a patto di rispettare, rispettivamente, l'**opt-in obbligatorio** e i **limiti di caching/uso dei dati**.
-> Il documento mostra, per ogni canale, **cosa è realmente fattibile** e **come ottenere lo stesso risultato di business in modo conforme**.
+> ⚠️ **Verità di fondo.** Le API ufficiali di **Instagram** e **LinkedIn** **non permettono** il cold outreach di massa (DM non richiesti), l'auto-follow/like verso terzi, né lo scraping di follower e profili. **WhatsApp** e **Google** offrono percorsi ufficiali solidi (rispettando opt-in e limiti di caching).
+> **ManyChat non cambia queste regole** — è un partner ufficiale Meta che lavora *sopra* le API ufficiali: non abilita cold DM né scraping, ma è il modo **più rapido e conforme** per **eseguire** la parte conversazionale (engagement, sequenze DM, broadcast su opt-in) di Instagram e WhatsApp.
 
 ---
 
 ## 1. Executive Summary — la fattibilità in una tabella
 
-| Agente | Obiettivo | API ufficiale | Fattibilità obiettivo così com'è | Percorso consigliato |
+| Agente | Obiettivo | API / strumento ufficiale | Fattibilità | Percorso consigliato |
 |---|---|---|:---:|---|
-| **Instagram (outreach)** | Cold DM + engagement | Instagram Messaging / Graph API | 🔴 Cold DM vietato | Ads "click-to-DM" + trigger da commento/story (finestra 24h) |
+| **Instagram (outreach)** | Cold DM + engagement | Instagram Graph API **+ ManyChat** | 🔴 Cold DM vietato | Ads click-to-DM + trigger commento/story (finestra 24h) eseguiti in ManyChat |
 | **Scraping Instagram** | Trovare lead in nicchia | Business Discovery + Hashtag Search | 🔴 No liste follower/PII | Discovery su username noti + provider dati + lead ads |
-| **LinkedIn (outreach)** | Cold DM + engagement | Marketing API (Conversation Ads) | 🟡 Solo a pagamento (CPS) | Conversation/Message Ads + contenuti organici + Lead Gen Forms |
-| **Scraping LinkedIn** | Trovare lead in nicchia | *(nessuna API di ricerca persone)* | 🔴 Scraping vietato | Lead Gen Forms + Sales Navigator (manuale) + data provider in licenza |
-| **WhatsApp (messaggistica)** | Campagne + engagement | WhatsApp Cloud API | 🟡 Solo con opt-in | Template Marketing + funnel opt-in (CTWA, widget, form) |
+| **LinkedIn (outreach)** | Cold DM + engagement | Marketing API (Conversation Ads) | 🟡 Solo a pagamento | Conversation/Message Ads + contenuti organici + Lead Gen Forms |
+| **Scraping LinkedIn** | Trovare lead in nicchia | *(nessuna API di ricerca persone)* | 🔴 Scraping vietato | Lead Gen Forms + Sales Navigator (manuale) + data provider |
+| **WhatsApp (messaggistica)** | Campagne + engagement | WhatsApp Cloud API **+ ManyChat/BSP** | 🟡 Solo con opt-in | Template Marketing + funnel opt-in (CTWA/widget/form) |
 | **Google (scraping)** | Trovare lead in nicchia | Places API (New) + Custom Search | 🟢 Business B2B locali | Places Text/Nearby Search → enrichment sito → CRM |
 
-**In sintesi:** la "macchina" più solida e conforme è **Google (discovery) → enrichment → WhatsApp (con opt-in) / LinkedIn Ads (a pagamento)**. Instagram e LinkedIn "a freddo" via bot esistono ma vivono fuori dalle API ufficiali, con rischio concreto di ban e responsabilità legale (vedi §11).
+**In sintesi:** la "macchina" più solida è **Google (discovery) → enrichment → CRM → outreach conforme**, dove l'**outreach su Instagram/WhatsApp è eseguito da ManyChat** e quello **B2B da LinkedIn Ads**. Il cliente conserva il "cervello" (scraping, scoring, consenso) negli **agenti custom**; ManyChat è il **layer di esecuzione**.
 
 ---
 
 ## 2. Architettura comune degli agenti
 
-Tutti e 6 gli agenti condividono lo **stesso scheletro a pipeline**. Ogni agente è un *worker* specializzato che alimenta un unico **CRM/Data Lake di lead**.
+Modello **"cervello + braccio"**: gli **agenti custom** (Python) fanno discovery, enrichment, scoring e gestione consenso; **ManyChat** (per IG/WhatsApp) e le **API Ads** (per LinkedIn) sono il **braccio esecutivo**.
 
 ```mermaid
 flowchart LR
-    subgraph DISCOVERY["1 - Discovery / Scraping"]
+    subgraph BRAIN["CERVELLO - Agenti custom (Python)"]
         G[Agente Google]
         SI[Scraping IG]
         SL[Scraping LinkedIn]
-    end
-    subgraph CORE["2 - Core Pipeline"]
         DEDUP[Dedup + Normalizzazione]
         ENRICH[Enrichment]
-        SCORE[Scoring / Qualifica nicchia]
+        SCORE[Scoring / Qualifica]
+        CONS[Consenso + Suppression]
         CRM[(CRM / Lead DB)]
     end
-    subgraph OUTREACH["3 - Outreach / Engagement"]
-        AIG[Agente Instagram]
-        AL[Agente LinkedIn]
-        AW[Agente WhatsApp]
+    subgraph ARM["BRACCIO - Esecuzione outreach"]
+        MC[ManyChat: IG + WhatsApp]
+        LIADS[LinkedIn Conversation Ads]
     end
     G --> DEDUP
     SI --> DEDUP
     SL --> DEDUP
-    DEDUP --> ENRICH --> SCORE --> CRM
-    CRM --> AIG
-    CRM --> AL
-    CRM --> AW
-    AIG -. esiti/risposte .-> CRM
-    AL -. esiti/risposte .-> CRM
-    AW -. esiti/risposte .-> CRM
+    DEDUP --> ENRICH --> SCORE --> CONS --> CRM
+    CRM -->|API: subscriber + sendFlow| MC
+    CRM -->|API Marketing| LIADS
+    MC -. webhook: reply/opt-out .-> CRM
+    LIADS -. lead forms .-> CRM
 ```
 
 ### 2.1 Fasi comuni
-
 1. **Discovery / Scraping** — gli agenti "scraping" raccolgono candidati lead.
-2. **Dedup & Normalizzazione** — chiave univoca (dominio, telefono E.164, handle), merge dei duplicati cross-canale.
-3. **Enrichment** — completamento dati (sito, email, settore, dimensione, canali social).
-4. **Scoring / Qualifica** — filtro sulla nicchia (regole + LLM classifier) → `hot / warm / cold / scarto`.
-5. **Consenso & Suppression** — registrazione base giuridica (GDPR), liste opt-out/DNC, blacklist.
-6. **Outreach / Engagement** — gli agenti di canale eseguono le sequenze **entro i limiti dell'API**.
-7. **Feedback loop** — risposte, bounce, opt-out ritornano nel CRM e aggiornano lo scoring.
+2. **Dedup & Normalizzazione** — chiave univoca (dominio, telefono E.164, handle), merge cross-canale.
+3. **Enrichment** — sito, email, settore, dimensione, canali social.
+4. **Scoring / Qualifica** — regole + LLM classifier → `hot / warm / cold / scarto`.
+5. **Consenso & Suppression** — base giuridica (GDPR), opt-out/DNC, blacklist.
+6. **Outreach / Engagement** — eseguito da ManyChat (IG/WhatsApp) e LinkedIn Ads, entro i limiti dell'API.
+7. **Feedback loop** — risposte, opt-out, esiti ritornano nel CRM e aggiornano lo scoring.
 
 ### 2.2 Modello dati minimo (schema `leads`)
 
@@ -89,215 +80,167 @@ flowchart LR
 | `lead_id` | uuid | PK |
 | `source` | enum | `google` / `ig_scrape` / `li_scrape` / `manual` / `ad_form` |
 | `niche_tags` | text[] | classificazione nicchia |
-| `company_name` | text | |
-| `website` | text | |
+| `company_name` / `website` | text | dati azienda |
 | `email` | text | base giuridica obbligatoria (GDPR) |
 | `phone_e164` | text | per WhatsApp |
 | `ig_handle` / `li_url` | text | identificatori social |
+| `manychat_subscriber_id` | text | **link al contatto ManyChat** |
 | `score` | int | 0–100 |
 | `status` | enum | `new / qualified / contacted / replied / opted_out / won / lost` |
 | `consent_basis` | enum | `legittimo_interesse / consenso / n_a` |
-| `consent_ts` | timestamptz | timestamp opt-in (per WhatsApp/email) |
+| `consent_ts` | timestamptz | timestamp opt-in (WhatsApp/email) |
 | `suppressed` | bool | opt-out / DNC |
 | `last_touch_at` | timestamptz | per rispettare frequency cap |
 
-> **Nota GDPR (cliente UE):** ogni record che contiene dati personali (email, telefono, profilo di una **persona fisica**) deve avere una **base giuridica** documentata (legittimo interesse per il B2B, consenso per WhatsApp/email marketing) e un meccanismo di **opt-out** sempre attivo. Vedi §11.
-
 ### 2.3 Stack tecnico consigliato
+- **Runtime agenti:** Python 3.12 (worker).
+- **Orchestrazione/coda:** job queue (Redis/RQ o Celery) + scheduler per rate limit e finestre orarie.
+- **Storage:** Postgres/Supabase per il CRM lead.
+- **"Cervello":** LLM (Claude) per classificazione nicchia, personalizzazione copy, parsing pagine, gestione risposte.
+- **Esecuzione outreach:** **ManyChat** (IG/WhatsApp) via API; **Meta Ads / LinkedIn Marketing API** per le campagne.
+- **Segreti/token:** vault per token OAuth + **ManyChat API token**.
+- **Osservabilità:** logging strutturato per ogni chiamata API (endpoint, quota, esito).
 
-- **Runtime agenti:** Python 3.12 (worker) — coerente con lo stack già in uso nel repo.
-- **Orchestrazione/coda:** un job queue (es. Redis/RQ o Celery) + scheduler per rispettare rate limit e finestre orarie.
-- **Storage:** Postgres/Supabase per il CRM lead; storage oggetti per allegati/log.
-- **"Cervello" degli agenti:** LLM (Claude) per classificazione nicchia, personalizzazione copy, parsing pagine, gestione risposte.
-- **Segreti/token:** vault per token OAuth (rotazione), un'app Meta e un'app LinkedIn dedicate al cliente.
-- **Osservabilità:** logging strutturato per ogni chiamata API (endpoint, quota residua, esito) — indispensabile per non superare i rate limit.
+> **Build vs Buy.** Costruire da zero l'esecuzione IG/WhatsApp significa gestire in proprio le API Meta, le finestre 24h, i template, la moderazione: molto lavoro e rischio compliance. **ManyChat** copre questa parte "chiavi in mano" restando conforme → **consigliato** come braccio esecutivo, con gli agenti custom a orchestrarlo via API.
 
 ---
 
 ## 3. 🟠 Agente Instagram — Outreach & Engagement
 
 ### 3.1 API ufficiali disponibili
-- **Instagram API** con *Instagram Login* (diretto) o con *Facebook Login* (Graph API). Richiede account **Business/Creator** (Professional).
-- Prodotti: *Content Publishing*, *Comment Moderation*, *Mentions*, *Hashtag Search*, *Business Discovery*, *Insights*, **Instagram Messaging** (Messenger Platform).
+- **Instagram API** con *Instagram Login* o *Facebook Login* (Graph API). Account **Business/Creator**.
+- Prodotti: *Content Publishing*, *Comment Moderation*, *Mentions*, *Hashtag Search*, *Business Discovery*, *Insights*, **Instagram Messaging**.
 
 ### 3.2 🟢 Cosa puoi fare (conforme)
-- Pubblicare post/reel/storie (limite ~25 contenuti/24h).
-- Leggere e **rispondere ai commenti** sui propri contenuti; nascondere/eliminare.
-- Ricevere e **rispondere ai DM in ingresso** entro la **finestra di 24h** dall'ultima interazione dell'utente.
-- Automazioni tipo "commenta *PAROLA* → ricevi DM": **lecite** perché l'utente *inizia* l'interazione (apre lui la finestra 24h). È il modello ManyChat/CreatorFlow.
-- Rispondere a *story reply* e *mention*.
-- Leggere gli **insight** del proprio account.
+- Pubblicare post/reel/storie (limite ~25/24h).
+- Rispondere ai **commenti** sui propri contenuti.
+- **Rispondere ai DM in ingresso** entro la **finestra 24h** dall'ultima interazione utente.
+- Automazioni "**commenta PAROLA → ricevi DM**": lecite (l'utente apre la finestra 24h).
+- Rispondere a *story reply* e *mention*; leggere gli insight.
 
 ### 3.3 🔴 Cosa NON puoi fare via API ufficiale
-- **Inviare DM a freddo** a utenti che non ti hanno scritto/interagito → *vietato*. Nessun endpoint per DM non richiesti.
-- **Follow / unfollow** programmatico verso terzi → nessun endpoint.
-- **Like / commento automatico** sui post di *altri* → nessun endpoint.
-- Vedere/estrarre la **lista follower** di altri account.
-- Il tag `HUMAN_AGENT` (estende la finestra a 7 giorni) è valido **solo per risposte di un operatore umano**: usarlo per bot è esplicitamente vietato e rilevato da Meta.
+- **DM a freddo** a chi non ha interagito → vietato.
+- **Follow/unfollow** e **like/commento automatico** verso terzi → nessun endpoint.
+- Estrarre **liste follower** di altri.
+- `HUMAN_AGENT` (finestra 7 giorni) valido **solo** per risposte di operatore umano.
 
-> **Conclusione:** l'obiettivo "campagne di reach-out a freddo + engagement verso lead freddi" **non è realizzabile con l'API ufficiale di Instagram**. L'API serve a *convertire in caldo* chi ti contatta, non a contattare a freddo.
+> **Conclusione:** il cold reach-out via API ufficiale **non è possibile**. L'API (e ManyChat) servono a **convertire in caldo** chi ti contatta.
 
-### 3.4 Requisiti tecnici
-- App su Meta for Developers + **Business Verification**.
-- **App Review** per permessi avanzati (es. `instagram_business_manage_messages`, `instagram_business_basic`).
-- Rate limit di piattaforma (≈ chiamate/ora proporzionali agli utenti) e limiti messaging (indicativamente ~200 msg/ora nella finestra aperta).
+### 3.4 Motore consigliato: **ManyChat** (vedi §9)
+Instagram è il caso d'uso ideale per ManyChat: **comment-to-DM**, **story reply**, **keyword**, **flow builder**, **AI Steps**, sequenze nella finestra 24h. Gli agenti custom inviano i segmenti/lead a ManyChat via API e ricevono gli esiti via webhook.
 
-### 3.5 Come raggiungere l'obiettivo in modo conforme (architettura consigliata)
-Trasformare il "cold" in "opted-in" e lasciar aprire all'utente la finestra 24h:
+### 3.5 Requisiti tecnici
+- App Meta + **Business Verification**; **App Review** per i permessi messaging.
+- Collegamento dell'account IG Business a ManyChat.
+- Rate limit di piattaforma e messaging (~200 msg/ora in finestra aperta).
 
+### 3.6 Architettura conforme
 ```mermaid
 flowchart LR
-    A[Contenuti + Ads targettizzati sulla nicchia] --> B{Trigger utente}
-    B -->|commento keyword| C[Apertura finestra 24h]
-    B -->|story reply / DM| C
-    B -->|Click-to-Instagram-DM Ad| C
-    C --> D[Sequenza DM automatica lecita]
-    D --> E[Qualifica in CRM]
+    A[Contenuti + Ads click-to-IG-DM sulla nicchia] --> B{Trigger utente}
+    B -->|commento keyword / story reply / DM| C[Apertura finestra 24h]
+    C --> D[ManyChat: flow DM + AI Steps]
+    D --> E[Qualifica -> CRM via webhook]
     E --> F[Handoff a operatore o WhatsApp]
 ```
 
-- **Ads "Click-to-Instagram-Direct"** (via Marketing API/Ads Manager): l'utente che clicca *apre lui* la conversazione → puoi rispondere con sequenze automatiche. È il canale "a freddo" **conforme**.
-- **Comment/Story trigger** con keyword → DM automatico (lecito).
-- **Engagement organico** manuale/assistito (l'agente prepara i contenuti e le risposte, l'azione verso terzi resta umana).
-
-### 3.6 🔴 Alternative non ufficiali (solo per trasparenza sui rischi)
-Esistono strumenti di automazione basati su sessioni browser/mobile non ufficiali (auto-DM, auto-follow, scraping). **Violano i Termini Instagram**, portano a **shadowban / ban dell'account** e — su dati di persone UE — espongono a **responsabilità GDPR**. **Non consigliati** come infrastruttura per un cliente.
+### 3.7 🔴 Alternative non ufficiali
+Bot di auto-DM/auto-follow/scraping: **violano i Termini**, portano a shadowban/ban e a responsabilità GDPR. Non consigliati.
 
 ---
 
 ## 4. 🔴 Agente Scraping Instagram — Ricerca lead
 
-### 4.1 API ufficiali disponibili
-- **Business Discovery** — dati pubblici di un account **Professional**, **conoscendone già lo username**.
-- **Hashtag Search** — media recenti/top per hashtag (max **30 hashtag unici / 7 giorni** per account).
+### 4.1 API ufficiali
+- **Business Discovery** — dati pubblici di un account **Professional**, **conoscendone lo username**.
+- **Hashtag Search** — media recenti/top per hashtag (max **30 hashtag / 7 giorni**).
 
-### 4.2 🟢 / 🟡 Cosa puoi fare (conforme)
-- **Business Discovery** (dato uno username Professional) restituisce: `username`, `name`, `biography`, `website`, `profile_picture_url`, `followers_count`, `follows_count`, `media_count` e, per i media, `caption`, `like_count`, `comments_count`, `media_type`, `permalink`, `timestamp`. 🟡
-- **Hashtag Search**: individua media pubblici per hashtag di nicchia (per capire *chi crea contenuti* su un tema). 🟡
+### 4.2 🟡 Cosa puoi fare
+- **Business Discovery**: `username`, `name`, `biography`, `website`, `followers_count`, `follows_count`, `media_count` + media (`caption`, `like_count`, `comments_count`, `media_type`, `permalink`, `timestamp`).
+- **Hashtag Search**: media pubblici per hashtag di nicchia.
 
-### 4.3 🔴 Cosa NON puoi fare via API ufficiale
-- **Cercare utenti per criteri** (bio, località, keyword) in modo arbitrario → nessun endpoint di ricerca persone.
-- Estrarre **liste follower** di un account.
-- Ottenere **email/telefono** (salvo ciò che l'account espone pubblicamente in bio).
-- Costruire un database di profili personali via scraping.
+### 4.3 🔴 Cosa NON puoi fare
+- Cercare utenti per criteri arbitrari; estrarre liste follower; ottenere email/telefono (salvo bio pubblica); costruire un DB di profili.
 
-> **Conclusione:** l'API ufficiale è utile per **arricchire** account già noti e per **capire la nicchia via hashtag**, ma **non** per generare liste di lead a freddo.
-
-### 4.4 Come raggiungere l'obiettivo in modo conforme
-- **Seed list** di account (competitor, hashtag, community) → **Business Discovery** per arricchire i profili business. 🟡
-- **Instagram/Facebook Lead Ads**: raccolta lead *con consenso* (form nativo) — il modo pulito per ottenere contatti in nicchia. 🟢
-- **Meta Content Library / Ad Library**: intelligence su chi fa advertising nella nicchia. 🟢
-- **Provider dati in licenza** (con propria compliance e DPA) per l'enrichment. 🟡
-
-### 4.5 🔴 Alternative non ufficiali
-Scraper di follower/hashtag di terze parti: veloci ma **contro i Termini**, con dati spesso non aggiornati e **problemi GDPR** (raccolta massiva di dati personali senza base giuridica). Da valutare con estrema cautela e parere legale.
+### 4.4 Percorso conforme
+- **Seed list** account → Business Discovery per enrichment. 🟡
+- **Instagram/Facebook Lead Ads**: lead **con consenso**. 🟢
+- **Meta Content/Ad Library** per intelligence. 🟢
+- **Provider dati in licenza** (con DPA). 🟡
 
 ---
 
 ## 5. 🟡 Agente LinkedIn — Outreach & Engagement
 
-### 5.1 API ufficiali disponibili
-- **Marketing Developer Platform** (accesso su richiesta/approvazione): **Message Ads** e **Conversation Ads** (Sponsored Messaging), **Lead Gen Forms**, gestione Company Page, **posting organico** (Posts/Share API), Community Management, Analytics.
-- **Sign In with LinkedIn (OIDC)**: autenticazione + profilo base del **solo utente consenziente**.
+### 5.1 API ufficiali
+- **Marketing Developer Platform** (approvazione): **Message Ads** e **Conversation Ads** (Sponsored Messaging, CPS), **Lead Gen Forms**, gestione Company Page, **posting organico**, Analytics.
+- **Sign In with LinkedIn (OIDC)**: profilo base del **solo utente consenziente**.
 
-### 5.2 🟡 Cosa puoi fare (conforme)
-- **Conversation Ads / Message Ads**: recapitare **messaggi personalizzati nella inbox** di membri targettizzati (per settore, ruolo, azienda, seniority). Modello **CPS** (paghi per messaggio recapitato). È il modo **ufficiale** di fare "reach-out" su LinkedIn.
-  - Fino a **25** contenuti in una conversazione; opt-out obbligatorio; frequency cap per destinatario.
-  - Obiettivo `LEAD_GENERATION` supportato → **Lead Gen Forms** integrati.
-- **Pubblicazione contenuti organici** su profilo/pagina (thought leadership sulla nicchia).
-- **Analytics** su pagina e campagne.
+### 5.2 🟡 Cosa puoi fare
+- **Conversation/Message Ads**: messaggi personalizzati nella inbox di membri targettizzati (settore, ruolo, azienda). Fino a 25 contenuti; opt-out e frequency cap obbligatori; obiettivo `LEAD_GENERATION` con Lead Gen Forms.
+- **Contenuti organici** e **Analytics**.
 
-### 5.3 🔴 Cosa NON puoi fare via API ufficiale
-- **Richieste di collegamento automatiche** → nessun endpoint.
-- **Messaggi diretti membro-a-membro** (InMail "gratis"/organici automatizzati) → nessun endpoint pubblico.
-- **Ricerca persone** / lettura profili di membri arbitrari → nessun endpoint.
-- **Scraping di profili**: **esplicitamente vietato** dallo User Agreement (LinkedIn banna attivamente i tool di automazione).
+### 5.3 🔴 Cosa NON puoi fare
+- Connection request automatiche; DM membro-a-membro automatizzati; ricerca persone; scraping profili → **vietato**.
 
-### 5.4 Requisiti tecnici
-- **LinkedIn Developer App** + richiesta di accesso al **Marketing Developer Platform** (processo di approvazione).
-- **Ad Account** e budget (le Conversation Ads sono a pagamento, CPS).
-- OAuth con scope adv/lead per la gestione campagne e il retrieval dei lead.
+### 5.4 Requisiti
+- Developer App + accesso Marketing Developer Platform; Ad Account e budget (CPS); OAuth scope adv/lead.
 
-### 5.5 Architettura consigliata
-
+### 5.5 Architettura
 ```mermaid
 flowchart LR
-    A[Contenuti organici sulla nicchia] --> B[Riscaldamento / brand]
-    C[Audience targettizzata: settore/ruolo/azienda] --> D[Conversation / Message Ads]
+    A[Contenuti organici] --> B[Brand/riscaldamento]
+    C[Audience: settore/ruolo/azienda] --> D[Conversation/Message Ads]
     D --> E[Lead Gen Form nativo]
     E --> F[Lead in CRM con consenso]
-    F --> G[Follow-up multicanale WhatsApp/email]
+    F --> G[Follow-up multicanale]
 ```
-
-- L'agente LinkedIn **prepara e gestisce** campagne di Sponsored Messaging + calendario editoriale organico, e **importa i lead** dai Lead Gen Forms.
-- L'engagement "1-a-1" a freddo (connection request, InMail manuali) resta **azione umana**, eventualmente *assistita* dall'agente (che scrive il copy) ma **non automatizzata via bot**.
-
-### 5.6 🔴 Alternative non ufficiali
-Tool tipo automazione connection/InMail e scraper di profili: **violano lo User Agreement**, rischiano **restrizione/ban** dell'account (anche del profilo personale usato) e, sui dati UE, **sanzioni GDPR**. Sconsigliati per un'infrastruttura cliente.
+> **Nota:** ManyChat **non** supporta LinkedIn. L'agente LinkedIn è interamente custom (Marketing API).
 
 ---
 
 ## 6. 🔴 Agente Scraping LinkedIn — Ricerca lead
 
-### 6.1 Situazione API ufficiale
-- **Non esiste** un'API pubblica per la **ricerca di persone/aziende** né per la **lettura di profili** di membri non consenzienti.
-- **Sales Navigator** è uno strumento **manuale** (le sue API sono riservate a partner CRM selezionati, non per prospecting self-service).
-- Lo **scraping è vietato** dai Termini.
-
-> **Conclusione:** l'obiettivo "scraping lead LinkedIn" **non ha un percorso via API ufficiale**.
-
-### 6.2 Alternative conformi consigliate
-- **LinkedIn Lead Gen Forms** (via Ads): lead di nicchia **con consenso**. 🟢
-- **Sales Navigator** per la ricerca **manuale** e la costruzione di liste (senza export automatizzato). 🟡
-- **Data provider B2B in licenza** (fornitori con DPA/consenso, es. database aziendali) per ottenere aziende/ruoli in nicchia → poi enrichment. 🟡
-- **Google/Places** (§8) per identificare le aziende della nicchia, poi trovarne i profili LinkedIn manualmente. 🟢
-
-### 6.3 🔴 Alternative non ufficiali
-Scraper di ricerche/profili (headless browser, API non ufficiali): **contro i Termini**, storia legale nota (*hiQ v. LinkedIn*), rischio ban e **GDPR**. Non consigliati.
+- **Nessuna API** pubblica per ricerca persone/lettura profili; **scraping vietato**.
+- Alternative conformi: **Lead Gen Forms** 🟢, **Sales Navigator** manuale 🟡, **data provider B2B in licenza** 🟡, discovery aziende via **Google/Places** 🟢.
+- 🔴 Scraper non ufficiali: contro i Termini (*hiQ v. LinkedIn*), rischio ban + GDPR.
 
 ---
 
 ## 7. 🟡 Agente WhatsApp — Messaggistica & Engagement
 
 ### 7.1 API ufficiale
-- **WhatsApp Business Platform — Cloud API** (ospitata da Meta), direttamente o tramite **BSP**.
-- Richiede: **WABA** (WhatsApp Business Account), **Business Verification** Meta, **numero registrato**, **display name approvato**, **privacy policy** valida.
+- **WhatsApp Business Platform — Cloud API** (via **BSP** o direttamente; **ManyChat** è un'opzione BSP no-code).
+- Richiede: **WABA**, **Business Verification**, numero registrato, display name approvato, privacy policy.
 
-### 7.2 🟢 / 🟡 Cosa puoi fare (conforme)
-- **Messaggi business-initiated** tramite **template approvati**, per categoria:
-  - **Marketing** 🟡 (promozioni, offerte, re-engagement) — richiede **opt-in esplicito**, costo per messaggio più alto.
-  - **Utility** 🟢 (conferme, aggiornamenti, notifiche) — opt-in, approvazione più snella.
-  - **Authentication** 🟢 (OTP/codici).
-- **Finestra di assistenza 24h**: dopo che l'utente scrive, puoi rispondere **liberamente** (testo libero, media, bottoni, liste). 🟢
-- **Messaggi interattivi** (quick reply, liste, CTA), media, cataloghi.
-- **Click-to-WhatsApp Ads (CTWA)** per generare conversazioni **con consenso**. 🟢
+### 7.2 🟢/🟡 Cosa puoi fare
+- **Template approvati** per messaggi business-initiated — **Marketing** 🟡 (opt-in, costo più alto), **Utility**/**Authentication** 🟢.
+- **Finestra 24h**: risposte libere dopo che l'utente scrive. 🟢
+- **Broadcast** su contatti **opted-in**; messaggi interattivi; **CTWA** per generare opt-in. 🟢
 
 ### 7.3 🔴 Vincolo chiave: opt-in obbligatorio
-- **Non puoi** messaggiare numeri che **non hanno dato consenso** a essere contattati su WhatsApp. Messaggi a numeri **acquistati/scrapati** = **violazione** della Business Messaging Policy → **ban del numero** e calo del *quality rating*.
-- Serve **prova documentata dell'opt-in** (dove/quando/come).
+Niente messaggi a numeri **senza consenso** (acquistati/scrapati) → **ban del numero** e calo del quality rating. Serve **prova documentata dell'opt-in**.
 
-### 7.4 Requisiti e limiti operativi
-- **Messaging limits** a scaglioni (1K → 10K → 100K → illimitati destinatari/24h) legati al **quality rating**.
-- **Pricing per messaggio** (dal 2025 il modello è *per-message*, con tariffe per categoria e per paese; Marketing costa più di Utility). Disponibile **MM Lite API** per l'ottimizzazione dei messaggi marketing.
-- Template soggetti ad **approvazione** e a **categorizzazione** automatica da parte di Meta.
+### 7.4 Motore: **ManyChat** o **BSP/Cloud API diretto**
+- **ManyChat** 🟢 per broadcast su opt-in + template + flow no-code (rapido). *Limite:* alcune operazioni (creare broadcast, elencare template, metriche) restano **UI-only** (vedi §9.3).
+- **BSP diretto (es. 360dialog, Wati)** o **Cloud API** se serve **automazione API completa** e controllo totale.
 
-### 7.5 Architettura consigliata (funnel opt-in → campagna)
+### 7.5 Requisiti e limiti
+- **Messaging limits** a scaglioni (1K → 10K → 100K → illimitati/24h) legati al quality rating.
+- **Pricing per messaggio** (dal 2025; Marketing > Utility; per paese). **MM Lite API** per marketing.
+- Template soggetti ad **approvazione** e **categorizzazione** Meta.
 
+### 7.6 Architettura (funnel opt-in → campagna)
 ```mermaid
 flowchart LR
-    A[Fonte lead: CTWA / widget sito / form / QR] --> B[Opt-in registrato con timestamp]
-    B --> C[(CRM: consent_basis=consenso)]
-    C --> D[Template Marketing approvato]
-    D --> E{Risposta utente?}
-    E -->|Sì| F[Finestra 24h: conversazione libera + qualifica]
-    E -->|No / opt-out| G[Suppression list]
+    A[CTWA / widget sito / form / QR] --> B[Opt-in + timestamp nel CRM]
+    B --> C[Push contatto in ManyChat via API]
+    C --> D[sendFlow: template Marketing approvato]
+    D --> E{Risposta?}
+    E -->|Sì| F[Finestra 24h: conversazione + qualifica]
+    E -->|No/opt-out| G[Suppression list]
     F --> H[Handoff commerciale]
 ```
-
-- L'agente WhatsApp **gestisce l'opt-in**, invia **template** approvati, e conduce la conversazione **nella finestra 24h** (qualifica, FAQ, prenotazioni), con **opt-out** sempre disponibile.
-- Per i "lead freddi" senza consenso: il primo touch **deve** essere un meccanismo di opt-in (es. **CTWA ads** sulla nicchia), non un messaggio a freddo.
-
-> **Nota:** WhatsApp è il canale **più adatto** all'obiettivo "campagne di messaggistica", **ma** l'intera strategia dipende dalla **raccolta di opt-in**. Senza opt-in, non è una strada percorribile in modo conforme.
 
 ---
 
@@ -306,61 +249,109 @@ flowchart LR
 ### 8.1 API ufficiali
 - **Places API (New)** — *Text Search*, *Nearby Search*, *Place Details*.
 - **Custom Search JSON API** — ricerca web programmatica.
-- (**Business Profile API** — solo per gestire *le proprie* schede, non per scraping.)
 
-### 8.2 🟢 Cosa puoi fare (conforme) — il canale più solido per la discovery
-- **Places Text/Nearby Search**: trovare **attività (business locali)** per **tipo + località** nella nicchia → ottieni `displayName`, `formattedAddress`, `location`, `types`, `businessStatus`, `rating`, `userRatingCount`.
-- **Place Details**: `nationalPhoneNumber` / `internationalPhoneNumber`, **`websiteUri`**, orari, recensioni.
-- **Custom Search JSON API**: trovare **siti web** che matchano query di nicchia (100 query/giorno gratis, poi a pagamento fino a ~10k/giorno) → base per l'enrichment.
+### 8.2 🟢 Cosa puoi fare (il canale di discovery più solido)
+- **Places Text/Nearby Search**: attività per **tipo + località** → `displayName`, `formattedAddress`, `location`, `types`, `businessStatus`, `rating`, `userRatingCount`.
+- **Place Details**: `nationalPhoneNumber`/`internationalPhoneNumber`, **`websiteUri`**, orari, recensioni.
+- **Custom Search JSON API**: siti web per query di nicchia (100/giorno gratis, poi a pagamento fino a ~10k/giorno).
 
-### 8.3 🔴 / 🟡 Limiti da rispettare
-- **Nessuna email** dai dati Places → l'email va reperita altrove (es. dal sito ufficiale dell'attività). 🟡
-- **Restrizioni di caching (ToS Google Maps):** il **`place_id` è memorizzabile a tempo indeterminato**; **le coordinate fino a ~30 giorni**; gran parte del *content* Places **non può essere memorizzato in un database permanente** (requisiti di *display*/attribuzione). **Non** si può ricostruire un DB alternativo a Google. 🔴
-- Costo per SKU/campo (field mask): richiedere solo i campi necessari per contenere i costi.
+### 8.3 🔴/🟡 Limiti
+- **Nessuna email** dai dati Places → reperire dal **sito ufficiale** dell'attività. 🟡
+- **Caching (ToS):** `place_id` memorizzabile a tempo indeterminato; coordinate ~30 giorni; gran parte del content **non** memorizzabile in DB permanente. 🔴
+- Costo per SKU/campo (field mask). 🟡
 
-### 8.4 Architettura consigliata
-
+### 8.4 Architettura
 ```mermaid
 flowchart LR
-    A[Query di nicchia: tipo + citta/area] --> B[Places Text/Nearby Search]
+    A[Query nicchia: tipo + citta/area] --> B[Places Text/Nearby Search]
     B --> C[Place Details: telefono, sito]
     C --> D{Sito disponibile?}
-    D -->|Sì| E[Enrichment: visita sito ufficiale -> email/contatti pubblici]
-    D -->|No| F[Solo telefono -> canale WhatsApp/chiamata]
-    E --> G[(CRM: dedup + scoring nicchia)]
+    D -->|Sì| E[Enrichment: sito ufficiale -> email/contatti pubblici]
+    D -->|No| F[Solo telefono -> WhatsApp/chiamata]
+    E --> G[(CRM: dedup + scoring)]
     F --> G
 ```
 
-- **Discovery** con Places → **enrichment** con Custom Search + visita al **sito ufficiale dell'attività** per i contatti **pubblicati dall'azienda stessa**.
-- **Rispetto dei limiti di caching**: nel CRM si conserva `place_id` (permesso) e i dati *propri* del lead (telefono/sito raccolti e riverificati), evitando di "clonare" il database Places.
+---
 
-> **Nota GDPR sull'enrichment email:** raccogliere email **aziendali** pubblicate dall'azienda per una finalità B2B è generalmente sostenibile con il **legittimo interesse**, ma serve informativa + opt-out. Le email **di persone fisiche** (es. `nome.cognome@`) richiedono maggiore cautela. Vedi §11.
+## 9. 🟡 ManyChat — Layer di esecuzione outreach (IG + WhatsApp)
+
+### 9.1 Cos'è e perché usarlo
+Partner **ufficiale Meta**: opera **sopra le API ufficiali**, quindi **non aggira i limiti** (niente cold DM, niente scraping) ma fornisce **chiavi in mano** flussi conversazionali conformi per **Instagram e WhatsApp** (e Messenger, Telegram, TikTok, SMS, Email). Diventa il **braccio esecutivo** degli agenti IG/WhatsApp.
+
+### 9.2 Cosa consente — sintesi
+| Funzione | Instagram | WhatsApp |
+|---|:---:|:---:|
+| Comment-to-DM (keyword) | 🟢 | — |
+| Story reply / keyword trigger | 🟢 | 🟢 |
+| Flow builder (bottoni, branching) + AI Steps | 🟢 | 🟢 |
+| Sequenze/drip in finestra 24h | 🟢 | 🟢 |
+| Broadcast su opt-in (template) | — | 🟢 |
+| **Cold DM / invio non richiesto** | 🔴 | 🔴 (serve opt-in) |
+| **Scraping / ricerca utenti** | 🔴 | 🔴 |
+
+### 9.3 API pubblica e integrazione con gli agenti custom
+Base URL **`https://api.manychat.com`** (token per pagina/account). Operazioni chiave utilizzabili dai worker:
+
+| Operazione | Endpoint (namespace `fb`, vale anche per IG/WA) | Uso |
+|---|---|---|
+| Crea contatto | `POST /fb/subscriber/createSubscriber` · WhatsApp: creazione contatto WA | Inserire il lead in ManyChat |
+| Trova contatto | `POST /fb/subscriber/findByName` · `findBySystemField` (telefono) | Match con lead esistente |
+| Info contatto | `POST /fb/subscriber/getInfo` | Stato/segmento |
+| Tag | `POST /fb/subscriber/addTagByName` · `removeTagByName` | Segmentazione campagna |
+| Custom field | `POST /fb/subscriber/setCustomFieldByName` | Personalizzazione (nome, nicchia, offerta) |
+| Invio contenuto | `POST /fb/sending/sendContent` | Messaggio in finestra 24h |
+| Avvia flusso | `POST /fb/sending/sendFlow` | Trigger di una sequenza/**template** |
+
+> ⚠️ **Limiti dell'API (verificati 2026):** restano **solo nella UI** operazioni come **creare broadcast**, **elencare i template WhatsApp approvati**, **schedulare campagne** e **leggere le metriche**. Per **WhatsApp business-initiated** **non** si usa `sendContent`: si usa **`sendFlow`** su un flusso che contiene il template (impostare i custom field **prima** del trigger).
+> ⚠️ Conseguenza operativa: gli agenti possono **creare/taggare/personalizzare contatti e avviare flussi**, ma la **configurazione di flow, template e broadcast va fatta a mano in ManyChat**. Non è pilotabile al 100% headless. *(Confermare le firme esatte nella documentazione API ufficiale di ManyChat.)*
+
+### 9.4 Ruolo per agente
+| Agente | Ruolo di ManyChat |
+|---|---|
+| **Instagram** | ✅ Motore ideale (comment/story trigger, flow, AI Steps in finestra 24h). |
+| **WhatsApp** | ✅ Buono (broadcast opt-in + template). Valutare BSP/Cloud API diretto se serve automazione API completa. |
+| **Scraping (Google/IG/LinkedIn)** | ❌ Fuori scope (nessuna discovery/scraping). |
+| **LinkedIn** | ❌ Non supportato. |
+
+### 9.5 Prezzi (indicativi 2026)
+- **Free**: ~500 contatti, funzioni core.
+- **Essential**: da ~15-17 $/mese (automazioni illimitate; **WhatsApp non nei piani più bassi**).
+- **Pro**: da ~29 $/mese, scala con i contatti.
+- **WhatsApp**: piano superiore **+ costi Meta per-messaggio** (Marketing/Utility) oltre la fee ManyChat.
+
+### 9.6 ManyChat vs alternative
+| Criterio | ManyChat | BSP diretto (360dialog/Wati) | Cloud API diretta (custom) |
+|---|---|---|---|
+| Time-to-market | 🟢 veloce (no-code) | 🟡 medio | 🔴 lento |
+| Controllo/automazione API | 🟡 parziale (UI-only su alcune ops) | 🟢 alto | 🟢 totale |
+| Canali | IG, WA, Messenger, TG, TikTok, SMS, Email | WA (+alcuni) | dipende |
+| Costo | fee + per-msg | fee + per-msg | solo per-msg + dev |
+| Consigliato per | **IG + start WhatsApp** | WhatsApp scalato | esigenze molto custom |
 
 ---
 
-## 9. La "macchina" completa — come i 6 agenti lavorano insieme
-
-L'insieme dei 6 agenti forma **un'unica pipeline di lead generation multicanale** per la nicchia:
+## 10. La "macchina" completa — come tutto lavora insieme
 
 ```mermaid
 flowchart TB
-    subgraph IN["INGRESSO LEAD (discovery)"]
-        G[Google - business locali nicchia]:::green
-        SI[Scraping IG - enrichment account noti]:::red
-        SL[Scraping LinkedIn - solo vie conformi]:::red
+    subgraph IN["INGRESSO (discovery) - agenti custom"]
+        G[Google - business locali]:::green
+        SI[Scraping IG - enrichment]:::red
+        SL[Scraping LinkedIn - vie conformi]:::red
     end
     CRM[(CRM / Lead DB<br/>dedup + scoring + consenso)]:::core
     subgraph OUT["USCITA (outreach/engagement)"]
-        W[WhatsApp - opt-in + template]:::yellow
-        L[LinkedIn - Conversation Ads]:::yellow
-        I[Instagram - ads click-to-DM + trigger]:::yellow
+        MC[ManyChat<br/>Instagram + WhatsApp]:::yellow
+        L[LinkedIn Conversation Ads]:::yellow
     end
     G --> CRM
     SI --> CRM
     SL --> CRM
-    CRM --> W
-    CRM --> L
-    CRM --> I
+    CRM -->|API subscriber + sendFlow| MC
+    CRM -->|Marketing API| L
+    MC -. webhook reply/opt-out .-> CRM
+    L -. lead forms .-> CRM
     classDef green fill:#1a7f37,color:#fff
     classDef yellow fill:#9a6700,color:#fff
     classDef red fill:#b42318,color:#fff
@@ -368,80 +359,126 @@ flowchart TB
 ```
 
 **Flusso operativo per la nicchia:**
-1. **Google** genera il grosso della lista (attività locali B2B della nicchia) — canale **più conforme e scalabile**.
+1. **Google** genera il grosso della lista (attività B2B della nicchia) — canale più scalabile.
 2. **Enrichment** (sito → email/telefono pubblici, match social).
-3. **Scoring/qualifica** con LLM sulla nicchia + suppression/consenso.
-4. **Outreach**:
-   - **WhatsApp** per chi ha dato **opt-in** (o via CTWA);
-   - **LinkedIn Conversation Ads** per il target B2B (a pagamento);
-   - **Instagram** via ads click-to-DM + trigger da engagement.
+3. **Scoring/qualifica** LLM + suppression/consenso.
+4. **Outreach**: **ManyChat** esegue IG (trigger + flow) e WhatsApp (opt-in + template); **LinkedIn Ads** per il B2B.
 5. **Feedback** (risposte, opt-out) → aggiorna CRM e scoring.
 
 ---
 
-## 10. Roadmap di implementazione (fasi)
+## 11. Blueprint operativo di implementazione (pronto da costruire)
+
+Per ogni agente: **cosa costruire custom**, **cosa configurare in ManyChat/Ads**, **step** e **Definition of Done (DoD)**.
+
+### 11.1 Agente Google (discovery) — *custom, priorità 1*
+- **Costruire:** worker Python → client Places (Text/Nearby Search) → Place Details → enrichment (Custom Search + fetch sito → estrai contatti pubblici) → dedup → LLM scoring nicchia → scrittura CRM.
+- **Config:** `GOOGLE_MAPS_API_KEY`, field mask minimale, rate limit + budget cap giornaliero, lista query (tipo attività × aree).
+- **DoD:** ≥ N lead/giorno qualificati con telefono e/o sito, deduplicati, con `niche_tags` e `score`.
+
+### 11.2 Agente Scraping IG — *custom, priorità 3*
+- **Costruire:** worker che, data una **seed list** di username Professional (competitor/community), chiama **Business Discovery** e salva l'enrichment; **Hashtag Search** per mappare la nicchia.
+- **Config:** token IG, quota hashtag (30/7gg), seed list.
+- **DoD:** account business arricchiti nel CRM + report hashtag di nicchia. *(No liste a freddo.)*
+
+### 11.3 Agente Scraping LinkedIn — *no-scraping, priorità 3*
+- **Costruire:** connettore import **Lead Gen Forms** + ingest liste **Sales Navigator** (export manuale) + eventuale **data provider** con DPA.
+- **DoD:** lead B2B con consenso nel CRM, taggati per nicchia.
+
+### 11.4 Agente Instagram (outreach) — *ManyChat + custom, priorità 2*
+- **In ManyChat:** flusso **comment-to-DM** (keyword), **story reply**, **welcome**, sequenza di qualifica, **AI Step** per FAQ; **handoff** a operatore/WhatsApp.
+- **In Meta Ads:** campagne **click-to-Instagram-DM** sulla nicchia.
+- **Custom (worker):** su lead qualificati/segmenti → `createSubscriber` → `setCustomFieldByName` → `addTagByName` → `sendFlow`; **webhook** ManyChat → aggiorna `status`/risposte nel CRM.
+- **DoD:** flusso comment-to-DM live + sequenza qualifica + sincronizzazione esiti nel CRM.
+
+### 11.5 Agente WhatsApp — *ManyChat/BSP + custom, priorità 2*
+- **Funnel opt-in (custom):** CTWA ads + widget sito + form → registra `consent_ts`/`consent_basis` nel CRM.
+- **In ManyChat:** **template Marketing** approvati + **flow** di ingaggio; broadcast su segmenti opted-in.
+- **Custom (worker):** push contatto WA in ManyChat → `setCustomFieldByName` → `sendFlow(template)`; webhook → CRM. *(Ricorda: broadcast/metriche = UI-only.)*
+- **DoD:** funnel opt-in attivo + template approvati + prima campagna segmentata + opt-out gestito.
+
+### 11.6 Agente LinkedIn (outreach) — *custom, priorità 3*
+- **Costruire:** integrazione **Marketing API** → creazione/gestione **Conversation/Message Ads** + import **Lead Gen Forms**; calendario editoriale organico.
+- **Config:** Ad Account, budget CPS, audience (settore/ruolo/azienda), OAuth adv/lead.
+- **DoD:** prima campagna Conversation Ads live + lead importati nel CRM.
+
+### 11.7 Sequenza di integrazione CRM ↔ ManyChat (riferimento)
+```
+1. Agente custom: lead → status=qualified, consenso OK
+2. POST /fb/subscriber/createSubscriber        (o find se esiste)
+3. POST /fb/subscriber/setCustomFieldByName    (nome, nicchia, offerta…)
+4. POST /fb/subscriber/addTagByName            (segmento campagna)
+5. POST /fb/sending/sendFlow                   (flow con template/sequenza)
+6. Webhook ManyChat (reply / opt-out) → aggiorna CRM (status, last_touch_at)
+```
+
+---
+
+## 12. Roadmap di implementazione (fasi)
 
 | Fase | Contenuto | Output |
 |---|---|---|
-| **F0 — Setup & Legale** | App Meta + LinkedIn, verifiche business, WABA, DPA/informativa GDPR, liste suppression | Ambiente pronto e conforme |
-| **F1 — Core Pipeline + Google** | CRM/lead DB, dedup, scoring LLM, **Agente Google** (Places + Custom Search) | Prime liste di nicchia qualificate |
-| **F2 — WhatsApp** | WhatsApp Cloud API, template approvati, funnel opt-in (CTWA/widget) | Canale messaggistica conforme attivo |
-| **F3 — LinkedIn** | Marketing API, Conversation/Message Ads, Lead Gen Forms, calendario organico | Reach-out B2B a pagamento attivo |
-| **F4 — Instagram** | Ads click-to-DM, trigger commento/story, sequenze DM in finestra 24h | Engagement/DM conforme attivo |
-| **F5 — Enrichment social** | Business Discovery IG, data provider in licenza, dashboard e reportistica | Arricchimento e ottimizzazione |
+| **F0 — Setup & Legale** | App Meta + LinkedIn, verifiche business, WABA, **account ManyChat + collegamento IG/WA**, DPA/informativa GDPR, suppression list | Ambiente pronto e conforme |
+| **F1 — Core + Google** | CRM/lead DB, dedup, scoring LLM, **Agente Google** | Prime liste di nicchia qualificate |
+| **F2 — WhatsApp (ManyChat)** | Funnel opt-in (CTWA/widget), template approvati, flow, integrazione API worker↔ManyChat | Canale messaggistica conforme attivo |
+| **F3 — Instagram (ManyChat)** | Ads click-to-DM, comment/story trigger, flow + AI Steps, webhook→CRM | Engagement/DM conforme attivo |
+| **F4 — LinkedIn** | Marketing API, Conversation/Message Ads, Lead Gen Forms, organico | Reach-out B2B a pagamento attivo |
+| **F5 — Enrichment & scale** | Business Discovery IG, data provider, dashboard e report | Ottimizzazione e scala |
 
-> **Priorità consigliata:** partire da **F1 (Google) + F2 (WhatsApp)** = massimo risultato con minimo rischio. LinkedIn/Instagram dopo, valutando budget ads e vincoli.
+> **Priorità:** **F1 (Google) + F2 (WhatsApp/ManyChat)** = massimo risultato con minimo rischio. Poi Instagram (F3) e LinkedIn (F4).
 
 ---
 
-## 11. Rischi, compliance e raccomandazioni legali
+## 13. Rischi, compliance e raccomandazioni legali
 
-> ⚠️ Sezione essenziale: l'obiettivo tocca **dati personali** e **piattaforme con Termini severi**. Il cliente opera (presumibilmente) in **UE** → si applica il **GDPR** e la **ePrivacy**.
+> ⚠️ L'obiettivo tocca **dati personali** e piattaforme con Termini severi. Cliente (presumibilmente) **UE** → **GDPR** ed **ePrivacy**.
 
-### 11.1 Termini delle piattaforme
-| Piattaforma | Cold outreach automatico | Scraping | Conseguenza violazione |
+### 13.1 Termini delle piattaforme
+| Piattaforma | Cold outreach automatico | Scraping | Conseguenza |
 |---|:---:|:---:|---|
-| Instagram | 🔴 vietato | 🔴 vietato | Shadowban / ban account |
-| LinkedIn | 🔴 vietato (organico) | 🔴 vietato | Restrizione / ban (anche profilo personale) |
-| WhatsApp | 🔴 senza opt-in | — | Ban del numero, calo quality rating |
-| Google | — | 🟡 solo via API + limiti caching | Revoca API key |
+| Instagram (anche via ManyChat) | 🔴 vietato | 🔴 vietato | Shadowban / ban account |
+| LinkedIn | 🔴 vietato (organico) | 🔴 vietato | Restrizione / ban |
+| WhatsApp (anche via ManyChat) | 🔴 senza opt-in | — | Ban numero, calo quality rating |
+| Google | — | 🟡 solo API + limiti caching | Revoca API key |
 
-### 11.2 GDPR / ePrivacy (UE)
-- **Base giuridica obbligatoria** per ogni dato personale trattato:
-  - **B2B / legittimo interesse**: sostenibile per contatti aziendali in target, **con** informativa e opt-out facile (bilanciamento documentato).
-  - **Consenso**: **necessario** per WhatsApp/email marketing verso persone (opt-in esplicito e provabile).
-- **Informativa privacy** e **registro dei trattamenti**; se si usano provider terzi (scraping/enrichment/BSP) servono **DPA**.
-- **Diritto di opposizione/cancellazione**: suppression list sempre attiva; ogni messaggio con **opt-out**.
-- **Dati scrapati**: la raccolta massiva di dati personali senza base giuridica è la principale fonte di **sanzioni**. Preferire **fonti con consenso** (lead ads, opt-in) e **dati aziendali pubblici** a target.
+> **ManyChat è conforme** perché usa le API ufficiali, ma **non ti protegge** se invii contenuti vietati (cold DM) o messaggi WhatsApp senza opt-in: la responsabilità resta tua.
 
-### 11.3 Raccomandazione strategica
-- **Costruire l'infrastruttura sui canali conformi** (Google + WhatsApp opt-in + LinkedIn/IG Ads).
-- Trattare gli approcci non ufficiali (bot di DM/scraping) come **fuori perimetro**: alto rischio operativo (ban) e legale (GDPR), non adatti a un servizio venduto a un cliente.
-- Coinvolgere un **legale/DPO** per informativa, DPA con i provider e valutazione del legittimo interesse **prima** del go-live.
+### 13.2 GDPR / ePrivacy (UE)
+- **Base giuridica obbligatoria**: legittimo interesse (B2B, con informativa + opt-out) o **consenso** (WhatsApp/email marketing).
+- **Informativa** + registro trattamenti; **DPA** con provider terzi (**ManyChat incluso**, in quanto responsabile del trattamento).
+- **Opt-out** sempre attivo; suppression list.
+- **Dati scrapati** senza base giuridica = principale fonte di sanzioni → preferire fonti con consenso e dati aziendali pubblici a target.
+
+### 13.3 Raccomandazione strategica
+- Infrastruttura sui **canali conformi** (Google + WhatsApp opt-in + LinkedIn/IG Ads, **eseguiti con ManyChat**).
+- Approcci non ufficiali (bot DM/scraping) = **fuori perimetro**.
+- **Legale/DPO** per informativa, DPA (Meta + ManyChat) e valutazione legittimo interesse **prima** del go-live.
 
 ---
 
-## 12. Appendice — Riepilogo endpoint principali per agente
+## 14. Appendice — Endpoint/strumenti principali per agente
 
-| Agente | Endpoint/prodotto ufficiale chiave | Uso |
+| Agente | Endpoint/strumento chiave | Uso |
 |---|---|---|
-| Instagram (outreach) | Messaging (Send API, finestra 24h), Comment Moderation, Content Publishing | Rispondere/DM in finestra, moderare, pubblicare |
-| Scraping IG | Business Discovery, Hashtag Search | Enrichment account noti, ricerca hashtag di nicchia |
-| LinkedIn (outreach) | Conversation Ads API, Message Ads API, Lead Gen Forms, Posts API | Sponsored messaging, lead, contenuti |
-| Scraping LinkedIn | *(nessuna API di ricerca/scraping)* → Lead Gen Forms | Lead con consenso |
-| WhatsApp | Cloud API: Messages (template + free-form 24h), Message Templates, CTWA | Campagne opt-in, conversazioni |
-| Google | Places API (Text/Nearby Search, Place Details), Custom Search JSON API | Discovery business locali, enrichment |
+| Instagram (outreach) | Instagram Messaging (finestra 24h) **+ ManyChat** (`sendFlow`, comment-to-DM) | Trigger + conversazioni conformi |
+| Scraping IG | Business Discovery, Hashtag Search | Enrichment account noti, hashtag |
+| LinkedIn (outreach) | Conversation/Message Ads API, Lead Gen Forms, Posts API | Sponsored messaging, lead, contenuti |
+| Scraping LinkedIn | *(nessuna API)* → Lead Gen Forms | Lead con consenso |
+| WhatsApp | Cloud API (template + 24h) **+ ManyChat/BSP** | Broadcast opt-in, conversazioni |
+| Google | Places API (Text/Nearby, Details), Custom Search JSON API | Discovery business, enrichment |
+| **ManyChat (trasversale IG/WA)** | `createSubscriber`, `setCustomFieldByName`, `addTagByName`, `sendFlow`, `sendContent` | Integrazione worker ↔ esecuzione |
 
 ---
 
-## 13. Fonti (verificate a luglio 2026)
+## 15. Fonti (verificate a luglio 2026)
 
 - Instagram Messaging / finestra 24h / cold DM: [keyapi.ai](https://www.keyapi.ai/blog/instagram-messaging-api-policy/), [creatorflow.so](https://creatorflow.so/blog/instagram-dm-compliance-meta-rules/)
-- Instagram Graph API (Business Discovery / Hashtag Search): [elfsight.com](https://elfsight.com/blog/instagram-graph-api-complete-developer-guide-for-2026/), [Instagram Official APIs reference (gist)](https://gist.github.com/jameschapman2c/65eff9f54a2d350b17a6ce5127b9fe42)
-- LinkedIn Conversation/Message Ads: [Microsoft Learn — Conversation Ads API](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads/advertising-targeting/version/conversation-ads-integrations), [Microsoft Learn — Message Ads API](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads/advertising-targeting/version/message-ads-integrations)
-- WhatsApp opt-in / template / pricing: [Meta for Developers — Template categorization](https://developers.facebook.com/documentation/business-messaging/whatsapp/templates/template-categorization), [wetarseel.ai](https://wetarseel.ai/whatsapp-business-api-opt-in-rules/), [ycloud.com](https://www.ycloud.com/blog/whatsapp-api-message-template-guide)
-- Google Places API (dati/caching): [Google — Place Data Fields](https://developers.google.com/maps/documentation/places/web-service/data-fields), [Google — Places policies](https://developers.google.com/maps/documentation/places/web-service/policies), [bizcollect.dev](https://bizcollect.dev/blog/google-places-api-terms)
+- Instagram Graph API (Business Discovery / Hashtag Search): [elfsight.com](https://elfsight.com/blog/instagram-graph-api-complete-developer-guide-for-2026/)
+- LinkedIn Conversation/Message Ads: [Microsoft Learn — Conversation Ads](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads/advertising-targeting/version/conversation-ads-integrations), [Message Ads](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads/advertising-targeting/version/message-ads-integrations)
+- WhatsApp opt-in / template / pricing: [Meta — Template categorization](https://developers.facebook.com/documentation/business-messaging/whatsapp/templates/template-categorization), [wetarseel.ai](https://wetarseel.ai/whatsapp-business-api-opt-in-rules/)
+- Google Places (dati/caching): [Google — Data Fields](https://developers.google.com/maps/documentation/places/web-service/data-fields), [Google — Policies](https://developers.google.com/maps/documentation/places/web-service/policies)
+- ManyChat (Instagram / WhatsApp / API): [ManyChat — Instagram DM automation](https://manychat.com/blog/instagram-dm-automation-tools/), [ManyChat — WhatsApp broadcast (Help)](https://help.manychat.com/hc/en-us/articles/14281461353756-Broadcasting-in-WhatsApp), [ManyChat API for the AI Agent Era (limiti API)](https://community.manychat.com/ideas/manychat-api-for-the-ai-agent-era-broadcast-templates-metrics-flow-management-9298), [ManyChat WhatsApp pricing](https://help.manychat.com/hc/en-us/articles/14281380243740-WhatsApp-pricing-guide)
 
 ---
 
-*Documento redatto come base di lavoro per il cliente esterno. Le API e le policy delle piattaforme cambiano frequentemente: prima del go-live rivalidare endpoint, limiti e Termini, e ottenere parere legale/DPO sul trattamento dati.*
+*Documento redatto come base operativa per il cliente esterno. API e policy cambiano frequentemente: prima del go-live rivalidare endpoint, limiti e Termini (Meta, LinkedIn, Google, ManyChat) e ottenere parere legale/DPO sul trattamento dati.*
