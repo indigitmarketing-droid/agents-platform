@@ -1,0 +1,57 @@
+Report sulle campagne
+1 luglio 2026 - 9 agosto 2026
+Azione di conversione,Stato della campagna,Campagna,Budget,Nome budget,Tipo di budget,Codice valuta,Stato,Motivi dello stato,Costo,Valore conv.,Valore conv./costo,Quota impr. rete di ricerca,Impressioni,CTR,Punteggio di ottimizzazione,Tipo di strategia di offerta,Clic,Tasso conv.,Conversioni,CPC medio,Costo/conv.,QI persa rete di ricerca (ranking),QI persa rete di ricerca (budget),Durata media del coinvolgimento per sessione (in secondi) (GA4),QI superiore sulla rete di ricerca
+Click-to-call,Attivata,PMAX | ITALIA | AEREO | PURCHASE |,"50,00", --,Ogni giorno,EUR,Idoneo (limitato),limitato dal budget; la maggior parte dei gruppi di asset è limitata dalle norme,0,"0,00",0, --,0, --,"87,71",Massimizza il valore di conversione,0, --,"0,00",0,0, --, --,0, --
+Niino Revenue,Attivata,PMAX | ITALIA | AEREO | PURCHASE |,"50,00", --,Ogni giorno,EUR,Idoneo (limitato),limitato dal budget; la maggior parte dei gruppi di asset è limitata dalle norme,0,"253,48",0, --,0, --,"87,71",Massimizza il valore di conversione,0, --,"11,01",0,0, --, --,0, --
+Niino Sign-up,Attivata,PMAX | ITALIA | AEREO | PURCHASE |,"50,00", --,Ogni giorno,EUR,Idoneo (limitato),limitato dal budget; la maggior parte dei gruppi di asset è limitata dalle norme,0,"0,00",0, --,0, --,"87,71",Massimizza il valore di conversione,0, --,"0,00",0,0, --, --,0, --
+Conversazione avviata,Attivata,PMAX | ITALIA | AEREO | PURCHASE |,"50,00", --,Ogni giorno,EUR,Idoneo (limitato),limitato dal budget; la maggior parte dei gruppi di asset è limitata dalle norme,0,"0,00",0, --,0, --,"87,71",Massimizza il valore di conversione,0, --,"0,00",0,0, --, --,0, --
+Niino revenue via Call,Attivata,PMAX | ITALIA | AEREO | PURCHASE |,"50,00", --,Ogni giorno,EUR,Idoneo (limitato),limitato dal budget; la maggior parte dei gruppi di asset è limitata dalle norme,0,"27,25",0, --,0, --,"87,71",Massimizza il valore di conversione,0, --,"1,00",0,0, --, --,0, --
+Purchase,Attivata,PMAX | ITALIA | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme,0,"0,00",0, --,0, --,"77,94",CPA target,0, --,"0,00",0,0, --, --,0, --
+Click-to-call,Attivata,PMAX | ITALIA | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme,0,"0,00",0, --,0, --,"77,94",CPA target,0, --,"0,00",0,0, --, --,0, --
+Niino Revenue,Attivata,PMAX | ITALIA | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme,0,"4.920,16",0, --,0, --,"77,94",CPA target,0, --,"15,83",0,0, --, --,0, --
+Booking GMV,Attivata,PMAX | ITALIA | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme,0,"0,00",0, --,0, --,"77,94",CPA target,0, --,"0,00",0,0, --, --,0, --
+Niino Sign-up,Attivata,PMAX | ITALIA | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme,0,"0,00",0, --,0, --,"77,94",CPA target,0, --,"0,00",0,0, --, --,0, --
+Conversazione avviata,Attivata,PMAX | ITALIA | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme,0,"0,00",0, --,0, --,"77,94",CPA target,0, --,"0,00",0,0, --, --,0, --
+Niino revenue via Call,Attivata,PMAX | ITALIA | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme,0,"79,20",0, --,0, --,"77,94",CPA target,0, --,"2,00",0,0, --, --,0, --
+Click-to-call,Attivata,PMAX | PIEMONTE | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"0,00",0, --,0, --,"77,55",CPA target,0, --,"0,00",0,0, --, --,0, --
+Niino Revenue,Attivata,PMAX | PIEMONTE | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"767,28",0, --,0, --,"77,55",CPA target,0, --,"7,67",0,0, --, --,0, --
+Niino Sign-up,Attivata,PMAX | PIEMONTE | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"0,00",0, --,0, --,"77,55",CPA target,0, --,"0,00",0,0, --, --,0, --
+Conversazione avviata,Attivata,PMAX | PIEMONTE | AMBULANZA | PURCHASE | APP,"130,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"0,00",0, --,0, --,"77,55",CPA target,0, --,"0,00",0,0, --, --,0, --
+Click-to-call,Attivata,PMAX | LOMBARDIA | AMBULANZA | PURCHASE | APP,"150,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"0,00",0, --,0, --,"86,89",CPA target,0, --,"0,00",0,0, --, --,0, --
+Calls from ads,Attivata,PMAX | LOMBARDIA | AMBULANZA | PURCHASE | APP,"150,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"0,00",0, --,0, --,"86,89",CPA target,0, --,"0,00",0,0, --, --,0, --
+Niino Revenue,Attivata,PMAX | LOMBARDIA | AMBULANZA | PURCHASE | APP,"150,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"104,62",0, --,0, --,"86,89",CPA target,0, --,"4,67",0,0, --, --,0, --
+Niino Sign-up,Attivata,PMAX | LOMBARDIA | AMBULANZA | PURCHASE | APP,"150,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"0,00",0, --,0, --,"86,89",CPA target,0, --,"0,00",0,0, --, --,0, --
+Conversazione avviata,Attivata,PMAX | LOMBARDIA | AMBULANZA | PURCHASE | APP,"150,00", --,Ogni giorno,EUR,Idoneo (limitato),la maggior parte dei gruppi di asset è limitata dalle norme; l'efficacia dell'annuncio è scadente,0,"0,00",0, --,0, --,"86,89",CPA target,0, --,"0,00",0,0, --, --,0, --
+ --,Totale: Campagne filtrate, --, --, --, --,EUR, --,,0,"6.151,98",0, --,0, --, --, --,0, --,"42,18",0,0, --, --,0, --
+ --,Totale: Campagne filtrate, --, --, --, --,EUR, --,,0,0,0, --,0, --, --, --,0, --,0,0,0, --, --,0, --
+ --,Totale: Campagne filtrate, --, --, --, --, --, --,,0,0,0, --,0, --, --, --,0, --,0,0,0, --, --,0, --
+Niino Revenue,Totale: Campagne filtrate, --, --, --, --, --, --,,0,0,0, --,0, --, --, --,0, --,0,0,0, --, --,0, --
+Niino revenue via Call,Totale: Campagne filtrate, --, --, --, --, --, --,,0,0,0, --,0, --, --, --,0, --,0,0,0, --, --,0, --
+ --,Totale: Campagne filtrate, --, --, --, --, --, --,,0,0,0, --,0, --, --, --,0, --,0,0,0, --, --,0, --
+Niino Revenue,Totale: Campagne filtrate, --, --, --, --,EUR, --,,0,"6.045,53",0, --,0, --, --, --,0, --,"39,18",0,0, --, --,0, --
+Niino revenue via Call,Totale: Campagne filtrate, --, --, --, --,EUR, --,,0,"106,45",0, --,0, --, --, --,0, --,"3,00",0,0, --, --,0, --
+,Totale: Account,,,,,EUR,,,"19016,42","7.327,68","0,39","43,38%",3.066.058,"2,29%",,,70.209,"0,16%","914,29","0,27","20,80","52,06%","4,56%","36,49","43,50%"
+Booking GMV,Totale: Account,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Purchase,Totale: Account,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Click-to-call,Totale: Account,,,,,,,,0,"531,33",0, --,0, --,,,0, --,"531,30",0,0, --, --,0, --
+Niino Sign-up,Totale: Account,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Niino revenue via Call,Totale: Account,,,,,,,,0,"106,45",0, --,0, --,,,0, --,"3,00",0,0, --, --,0, --
+Calls from ads,Totale: Account,,,,,,,,0,"326,51",0, --,0, --,,,0, --,"326,51",0,0, --, --,0, --
+Niino Revenue,Totale: Account,,,,,,,,0,"6.363,40",0, --,0, --,,,0, --,"53,47",0,0, --, --,0, --
+Conversazione avviata,Totale: Account,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+,Totale: Ricerca,,,,,EUR,,,"11933,33","1.175,70","0,10","63,12%",61.018,"8,15%",,,4.973,"17,54%","872,11","2,40","13,68","36,34%","0,54%","67,55","43,50%"
+,Totale: Performance Max,,,,,EUR,,,"7083,09","6.151,98","0,87","24,03%",3.005.040,"2,17%",,,65.236,"0,01%","42,18","0,11","167,93","67,48%","8,49%","28,12", --
+Niino Revenue,Totale: Performance Max,,,,,,,,0,"6.045,53",0, --,0, --,,,0, --,"39,18",0,0, --, --,0, --
+Niino revenue via Call,Totale: Performance Max,,,,,,,,0,"106,45",0, --,0, --,,,0, --,"3,00",0,0, --, --,0, --
+Niino Sign-up,Totale: Ricerca,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Click-to-call,Totale: Performance Max,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Niino Sign-up,Totale: Performance Max,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Booking GMV,Totale: Performance Max,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Booking GMV,Totale: Ricerca,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Purchase,Totale: Ricerca,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Conversazione avviata,Totale: Performance Max,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Calls from ads,Totale: Ricerca,,,,,,,,0,"326,51",0, --,0, --,,,0, --,"326,51",0,0, --, --,0, --
+Click-to-call,Totale: Ricerca,,,,,,,,0,"531,33",0, --,0, --,,,0, --,"531,30",0,0, --, --,0, --
+Niino Revenue,Totale: Ricerca,,,,,,,,0,"317,86",0, --,0, --,,,0, --,"14,30",0,0, --, --,0, --
+Calls from ads,Totale: Performance Max,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
+Purchase,Totale: Performance Max,,,,,,,,0,"0,00",0, --,0, --,,,0, --,"0,00",0,0, --, --,0, --
