@@ -39,37 +39,52 @@ si chiudono tutte insieme — e la risposta ribalta la lettura fatta finora.
 | **Click-to-call e Calls from ads si sovrappongono?** | **Sì, quasi integralmente.** Google Ads conta **+59,6%** di chiamate rispetto a quelle reali |
 | **Qual è il ROAS per campagna?** | **Una sola campagna su 22 è in profitto.** `PMAX \| ITALIA \| AMBULANZA` (+€1.474). Tutte le altre perdono |
 
-### Il quadro reale di luglio
+### Il quadro reale di luglio: due ROAS, due letture
 
-Niino non incassa il GMV: incassa la **fee** (take rate 10,95%). L'unico ROAS che
-descrive il business è quello sulla fee.
+L'account va letto su **due metriche distinte, che non si sostituiscono a vicenda**:
 
-| Metrica | Valore |
+| Metrica | Formula | Cosa misura | Luglio |
+|---|---|---|---:|
+| **ROAS** | GMV net booked / spesa | il transato intermediato dalla piattaforma | **4,59×** |
+| **ROAS Fee Niino** | fee netta / spesa | il ricavo che resta a Niino | **0,53×** |
+
+| Voce | Valore |
 |---|---:|
 | Spesa performance | € 13.938 |
 | GMV net booked | € 63.969 |
-| **ROAS GMV** | **4,59×** |
-| **Fee Niino netta** | **€ 7.007** |
-| **ROAS Fee** | **0,53×** |
-| **Margine netto** | **−€ 6.931** |
+| **ROAS** | **4,59×** |
+| Fee Niino netta | € 7.007 |
+| **ROAS Fee Niino** | **0,53×** |
+| Take rate effettivo | 10,95% |
+| **Margine netto** (fee − spesa) | **−€ 6.931** |
 
-**Il ROAS GMV di 4,59× è una metrica di vanità: misura il transato dei fornitori, non
-il ricavo di Niino.** Sul ricavo reale l'account è a 0,53×, cioè perde 47 centesimi
-per ogni euro speso.
+**Le due metriche raccontano due fatti entrambi veri:** la piattaforma sta
+intermediando 4,59 euro di transato per ogni euro speso in advertising — è un dato di
+scala reale e positivo — ma di quel transato Niino trattiene il 10,95%, e su quella
+base l'account perde 47 centesimi per ogni euro speso.
+
+**Il rapporto tra le due è il take rate effettivo**, e sarà la chiave di lettura del
+capitolo 7: dove le due metriche divergono più del normale, il problema non è il
+volume ma il tipo di corsa che la campagna porta.
 
 ### Dove si concentra la perdita
 
-| Gruppo | Spesa | % spesa | Fee netta | ROAS Fee | Margine |
-|---|---:|---:|---:|---:|---:|
-| **Search Chiamata** (12 campagne) | € 7.670 | 50,9% | € 1.356 | **0,18×** | **−€ 6.314** |
-| Performance Max (4 campagne) | € 4.845 | 32,1% | € 4.653 | **0,96×** | −€ 192 |
-| Search Purchase (3 campagne) | € 1.422 | 9,4% | € 647 | 0,45× | −€ 775 |
-| Brand (2 campagne) | € 944 | 6,3% | € 100 | 0,11× | −€ 844 |
-| Partner (1 campagna) | € 195 | 1,3% | € 28 | 0,14× | −€ 167 |
-| **Totale campagne con spesa** | **€ 15.076** | 100% | **€ 6.784** | **0,45×** | **−€ 8.292** |
+| Gruppo | Spesa | % spesa | GMV net | **ROAS** | Fee netta | **ROAS Fee** | Take rate | Margine |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **Search Chiamata** (12 campagne) | € 7.670 | 50,9% | € 9.814 | **1,28×** | € 1.356 | **0,18×** | 13,8% | **−€ 6.314** |
+| Performance Max (4 campagne) | € 4.845 | 32,1% | € 47.575 | **9,82×** | € 4.653 | **0,96×** | 9,8% | −€ 192 |
+| Search Purchase (3 campagne) | € 1.422 | 9,4% | € 4.016 | 2,82× | € 647 | 0,45× | 16,1% | −€ 775 |
+| Brand (2 campagne) | € 944 | 6,3% | € 620 | 0,66× | € 100 | 0,11× | 16,1% | −€ 844 |
+| Partner (1 campagna) | € 195 | 1,3% | € 410 | 2,10× | € 28 | 0,14× | 6,8% | −€ 167 |
+| **Totale campagne con spesa** | **€ 15.076** | 100% | **€ 62.435** | **4,14×** | **€ 6.784** | **0,45×** | 10,9% | **−€ 8.292** |
 
 **Il gruppo Search Chiamata assorbe il 50,9% della spesa e produce il 76% della
 perdita.** Performance Max, con un terzo della spesa, è sostanzialmente in pareggio.
+
+Le due metriche insieme mostrano una cosa che nessuna delle due mostra da sola:
+**Performance Max intermedia 9,82× ma trattiene solo il 9,8%, mentre Search Purchase
+intermedia 2,82× e trattiene il 16,1%.** PMax porta corse molto più grandi ma a
+marginalità più bassa.
 
 Questa è la conferma — con i dati reali — di quello che i tre report su Google Ads
 avevano indicato lavorando solo sui proxy: **il budget è sul canale sbagliato.**
@@ -118,31 +133,31 @@ coda di luglio è **€614,07**. **L'accelerazione è stata più forte di quanto
 Con il costo per campagna finalmente disponibile, ecco il quadro che i tre report
 precedenti non potevano calcolare. Ordinato per margine (fee netta − spesa).
 
-| Campagna | Gruppo | Spesa | Pren. nette | Fee netta | ROAS Fee | **Margine** |
-|---|---|---:|---:|---:|---:|---:|
-| **PMAX \| ITALIA \| AMBULANZA \| PURCHASE \| APP** | PMax | € 1.729 | 14 | € 3.203 | **1,85×** | **+€ 1.474** |
-| SEARCH \| ANZIANI \| MILANO \| PURCHASE | S. Purchase | € 91 | 2 | € 47 | 0,52× | −€ 44 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| VARESE 2 | S. Chiamata | € 158 | 1 | € 21 | 0,13× | −€ 137 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| PALERMO | S. Chiamata | € 298 | 5 | € 149 | 0,50× | −€ 149 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| BARI | S. Chiamata | € 182 | 1 | € 23 | 0,13× | −€ 159 |
-| SEARCH \| AMBULANZA \| PURCHASE \| ROMA | S. Purchase | € 434 | 13 | € 268 | 0,62× | −€ 166 |
-| sconto-doctorapp (Partnership) | Partner | € 195 | 2 | € 28 | 0,14× | −€ 167 |
-| SEARCH \| MILANO \| DIMISSIONI \| CHIAMATA | S. Chiamata | € 588 | 8 | € 420 | 0,71× | −€ 168 |
-| PMAX \| PIEMONTE \| AMBULANZA \| PURCHASE \| APP | PMax | € 1.246 | 14 | € 1.035 | 0,83× | −€ 211 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| AGRIGENTO | S. Chiamata | € 228 | 1 | € 13 | 0,06× | −€ 215 |
-| SN - 1225 - Brand | Brand | € 329 | 4 | € 100 | 0,30× | −€ 229 |
-| PMAX \| ITALIA \| AEREO \| PURCHASE | PMax | € 604 | 8 | € 273 | 0,45× | −€ 331 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| BOLOGNA | S. Chiamata | € 449 | 5 | € 94 | 0,21× | −€ 355 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| TORINO | S. Chiamata | € 636 | 6 | € 131 | 0,21× | −€ 505 |
-| SEARCH \| AMBULANZA \| PURCHASE \| MILANO | S. Purchase | € 897 | 15 | € 332 | 0,37× | −€ 565 |
-| IG - FOLLERS (Meta) | Brand | € 615 | 0 | € 0 | 0,00× | −€ 615 |
-| SEARCH \| CHIAMATA \| LUNGA PERCORRENZA *(in pausa)* | S. Chiamata | € 755 | 0 | € 0 | 0,00× | −€ 755 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| MILANO | S. Chiamata | € 984 | 4 | € 126 | 0,13× | −€ 858 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| ROMA | S. Chiamata | € 984 | 3 | € 71 | 0,07× | −€ 913 |
-| SEARCH \| CHIAMATA \| LUNGA PERCORRENZA *(attiva)* | S. Chiamata | € 1.241 | 6 | € 202 | 0,16× | −€ 1.039 |
-| SEARCH \| AMBULANZA \| CHIAMATA \| PUGLIA | S. Chiamata | € 1.167 | 5 | € 106 | 0,09× | −€ 1.061 |
-| **PMAX \| LOMBARDIA \| AMBULANZA \| PURCHASE \| APP** | PMax | € 1.266 | 7 | € 142 | **0,11×** | **−€ 1.124** |
-| **Totale** | | **€ 15.076** | **124** | **€ 6.784** | **0,45×** | **−€ 8.292** |
+| Campagna | Gruppo | Spesa | Pren. nette | GMV net | **ROAS** | Fee netta | **ROAS Fee** | **Margine** |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| **PMAX \| ITALIA \| AMBULANZA \| PURCHASE \| APP** | PMax | € 1.729 | 14 | € 37.752 | **21,83×** | € 3.203 | **1,85×** | **+€ 1.474** |
+| SEARCH \| ANZIANI \| MILANO \| PURCHASE | S. Purchase | € 91 | 2 | € 288 | 3,16× | € 47 | 0,52× | −€ 44 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| VARESE 2 | S. Chiamata | € 158 | 1 | € 105 | 0,67× | € 21 | 0,13× | −€ 137 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| PALERMO | S. Chiamata | € 298 | 5 | € 998 | 3,35× | € 149 | 0,50× | −€ 149 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| BARI | S. Chiamata | € 182 | 1 | € 140 | 0,77× | € 23 | 0,13× | −€ 159 |
+| SEARCH \| AMBULANZA \| PURCHASE \| ROMA | S. Purchase | € 434 | 13 | € 1.514 | 3,49× | € 268 | 0,62× | −€ 166 |
+| sconto-doctorapp (Partnership) | Partner | € 195 | 2 | € 410 | 2,10× | € 28 | 0,14× | −€ 167 |
+| SEARCH \| MILANO \| DIMISSIONI \| CHIAMATA | S. Chiamata | € 588 | 8 | € 3.289 | **5,59×** | € 420 | 0,71× | −€ 168 |
+| PMAX \| PIEMONTE \| AMBULANZA \| PURCHASE \| APP | PMax | € 1.246 | 14 | € 6.730 | **5,40×** | € 1.035 | 0,83× | −€ 211 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| AGRIGENTO | S. Chiamata | € 228 | 1 | € 110 | 0,48× | € 13 | 0,06× | −€ 215 |
+| SN - 1225 - Brand | Brand | € 329 | 4 | € 620 | 1,88× | € 100 | 0,30× | −€ 229 |
+| PMAX \| ITALIA \| AEREO \| PURCHASE | PMax | € 604 | 8 | € 2.107 | 3,49× | € 273 | 0,45× | −€ 331 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| BOLOGNA | S. Chiamata | € 449 | 5 | € 636 | 1,42× | € 94 | 0,21× | −€ 355 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| TORINO | S. Chiamata | € 636 | 6 | € 847 | 1,33× | € 131 | 0,21× | −€ 505 |
+| SEARCH \| AMBULANZA \| PURCHASE \| MILANO | S. Purchase | € 897 | 15 | € 2.214 | 2,47× | € 332 | 0,37× | −€ 565 |
+| IG - FOLLERS (Meta) | Brand | € 615 | 0 | € 0 | 0,00× | € 0 | 0,00× | −€ 615 |
+| SEARCH \| CHIAMATA \| LUNGA PERCORRENZA *(in pausa)* | S. Chiamata | € 755 | 0 | € 0 | 0,00× | € 0 | 0,00× | −€ 755 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| MILANO | S. Chiamata | € 984 | 4 | € 1.036 | 1,05× | € 126 | 0,13× | −€ 858 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| ROMA | S. Chiamata | € 984 | 3 | € 445 | 0,45× | € 71 | 0,07× | −€ 913 |
+| SEARCH \| CHIAMATA \| LUNGA PERCORRENZA *(attiva)* | S. Chiamata | € 1.241 | 6 | € 1.476 | 1,19× | € 202 | 0,16× | −€ 1.039 |
+| SEARCH \| AMBULANZA \| CHIAMATA \| PUGLIA | S. Chiamata | € 1.167 | 5 | € 732 | 0,63× | € 106 | 0,09× | −€ 1.061 |
+| **PMAX \| LOMBARDIA \| AMBULANZA \| PURCHASE \| APP** | PMax | € 1.266 | 7 | € 986 | **0,78×** | € 142 | **0,11×** | **−€ 1.124** |
+| **Totale** | | **€ 15.076** | **124** | **€ 62.435** | **4,14×** | **€ 6.784** | **0,45×** | **−€ 8.292** |
 
 ### Cinque letture
 
@@ -329,25 +344,74 @@ Le conseguenze sono concrete e spiegano i report precedenti:
 
 ---
 
-## 7. GMV e fee: quale ROAS guardare
+## 7. ROAS e ROAS Fee Niino: due metriche, due domande
 
-Il PDF riporta due ROAS che differiscono di quasi 9 volte:
+Le due metriche rispondono a domande diverse e **vanno lette insieme, mai una al posto
+dell'altra**:
 
-| | Formula | Valore |
-|---|---|---:|
-| ROAS GMV | GMV net booked / spesa perf. | **4,59×** |
-| **ROAS Fee** | **fee netta / spesa perf.** | **0,53×** |
+| Metrica | Formula | Risponde a | Luglio |
+|---|---|---|---:|
+| **ROAS** | GMV net booked / spesa | *Quanto transato genera l'advertising?* | **4,59×** |
+| **ROAS Fee Niino** | fee netta / spesa | *Quanto ne resta a Niino?* | **0,53×** |
 
-Il GMV è il transato che passa dalla piattaforma; **Niino ne trattiene il 10,95%**. Il
-ROAS GMV misura il volume intermediato, non il ricavo: è utile per raccontare la scala
-della piattaforma, **non per decidere quanto spendere in advertising**.
+Il primo misura la **scala della piattaforma**: quanto volume di corse l'advertising
+mette in moto. È il numero che descrive la crescita del marketplace e che conta per il
+posizionamento e per i fornitori.
 
-Il margine netto lo conferma senza ambiguità: **fee €7.007 − spesa performance €13.938
-= −€6.931.** Includendo tutta la spesa (€14.882, con Meta e brand), la perdita di luglio
-è **−€7.875**.
+Il secondo misura la **sostenibilità economica**: Niino trattiene il take rate — nel
+periodo il **10,95%** — e su quella base l'advertising deve ripagarsi. Il margine lo
+dice senza ambiguità: **fee €7.007 − spesa performance €13.938 = −€6.931.** Includendo
+tutta la spesa (€14.882, con Meta e brand), la perdita di luglio è **−€7.875**.
 
-**Regola operativa:** ogni decisione di budget si prende sul **ROAS Fee**, e la soglia
-di pareggio è **1,0×**. Oggi l'account è a 0,53× e **una sola campagna sta sopra 1,0×**.
+### Il rapporto tra le due è il take rate effettivo
+
+Qui sta il valore di tenerle separate: **il take rate non è uniforme tra campagne, e
+varia dal 6,8% al 20,0%.**
+
+| Campagna | **ROAS** | **ROAS Fee** | Take rate effettivo |
+|---|---:|---:|---:|
+| SEARCH \| AMBULANZA \| CHIAMATA \| VARESE 2 | 0,67× | 0,13× | **20,0%** |
+| SEARCH \| AMBULANZA \| PURCHASE \| ROMA | 3,49× | 0,62× | 17,7% |
+| SEARCH \| AMBULANZA \| CHIAMATA \| BARI | 0,77× | 0,13× | 16,4% |
+| SEARCH \| ANZIANI \| MILANO \| PURCHASE | 3,16× | 0,52× | 16,3% |
+| SEARCH \| AMBULANZA \| CHIAMATA \| ROMA | 0,45× | 0,07× | 16,0% |
+| SEARCH \| AMBULANZA \| CHIAMATA \| TORINO | 1,33× | 0,21× | 15,5% |
+| PMAX \| PIEMONTE \| AMBULANZA | 5,40× | 0,83× | 15,4% |
+| SEARCH \| AMBULANZA \| PURCHASE \| MILANO | 2,47× | 0,37× | 15,0% |
+| PMAX \| LOMBARDIA \| AMBULANZA | 0,78× | 0,11× | 14,4% |
+| PMAX \| ITALIA \| AEREO | 3,49× | 0,45× | 13,0% |
+| SEARCH \| MILANO \| DIMISSIONI \| CHIAMATA | 5,59× | 0,71× | 12,8% |
+| **PMAX \| ITALIA \| AMBULANZA** | **21,83×** | **1,85×** | **8,5%** |
+| sconto-doctorapp (Partnership) | 2,10× | 0,14× | 6,8% |
+| **Media account** | **4,59×** | **0,53×** | **10,95%** |
+
+Tre conseguenze operative:
+
+**1. `PMAX | ITALIA | AMBULANZA` ha il ROAS più alto dell'account e il take rate più
+basso tra le campagne che producono.** 21,83× di transato con l'8,5% trattenuto: porta
+corse molto grandi — €2.697 di ticket medio contro €481 di media account — su cui Niino
+guadagna proporzionalmente meno. **È comunque l'unica campagna in profitto**, ma il suo
+ROAS di 21,83× non va letto come "vale 21 volte quello che costa": vale 1,85 volte.
+
+**2. Le campagne con take rate alto hanno ticket bassi.** Varese 2 al 20% e Bari al
+16,4% trattengono molto su corse piccole (€105 e €140 di GMV totale nel mese): la
+marginalità percentuale è ottima, il volume è irrilevante. **Non è una leva di crescita.**
+
+**3. Il take rate è un criterio di selezione a sé.** A parità di ROAS Fee, la campagna
+con take rate più alto è più difendibile: dipende meno dal ticket medio, quindi è meno
+volatile. `SEARCH | AMBULANZA | PURCHASE | ROMA` (3,49× / 0,62× / 17,7%, 0%
+cancellazioni) è il profilo più solido dell'account dopo Italia Ambulanza.
+
+### Regola operativa
+
+> **Entrambe le metriche vanno riportate su ogni campagna, ogni mese.**
+>
+> - Il **ROAS** dice se la campagna porta volume alla piattaforma.
+> - Il **ROAS Fee Niino** dice se si ripaga. La soglia di pareggio è **1,0×**.
+> - Il loro **rapporto** dice che tipo di corse porta.
+>
+> Oggi l'account è a ROAS 4,59× e ROAS Fee 0,53×: **la piattaforma cresce e
+> l'advertising perde.** Una sola campagna su 22 sta sopra 1,0× di ROAS Fee.
 
 ---
 
@@ -367,9 +431,9 @@ Lo scarto di **€695** è esattamente `SEARCH | ANZIANI | MILANO | PURCHASE` (�
 `PMAX | ITALIA | AEREO | PURCHASE` (€603,95): **due campagne classificate come brand
 in una sezione e come performance in un'altra.**
 
-**2. ROAS GMV e ROAS Fee usano denominatori diversi.**
+**2. ROAS e ROAS Fee usano denominatori diversi.**
 
-- ROAS GMV 4,59× = 63.969 / **13.938**
+- ROAS 4,59× = 63.969 / **13.938**
 - ROAS Fee 0,53× = 7.007 / **13.243**
 
 Con lo stesso denominatore sarebbero 4,59× / 0,50× oppure 4,83× / 0,53×. Il margine
@@ -456,10 +520,14 @@ dell'account vicino al pareggio.
 
 ### La soglia da fissare adesso
 
-> **ROAS Fee ≥ 1,0× è la condizione di sopravvivenza di una campagna. ROAS Fee ≥ 1,5×
-> è la condizione per aumentarne il budget.**
+> **Ogni campagna va giudicata su entrambe le metriche, riportate affiancate:**
 >
-> A luglio, su 22 campagne, **una** superava 1,0×.
+> - **ROAS Fee Niino ≥ 1,0×** è la condizione di sopravvivenza della campagna;
+>   **≥ 1,5×** è la condizione per aumentarne il budget.
+> - **Il ROAS** resta il criterio per valutare il contributo alla crescita della
+>   piattaforma, e il suo rapporto con il ROAS Fee segnala il tipo di corse portate.
+>
+> A luglio, su 22 campagne, **una** superava 1,0× di ROAS Fee.
 
 ---
 
