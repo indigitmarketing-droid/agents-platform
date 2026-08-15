@@ -426,6 +426,73 @@ sostenibile invece che a €98.
 
 ---
 
+## 6bis. Fee o GMV: quale valore passare a Google
+
+Oggi a Google arriva **la fee di Niino, non il prezzo che paga il cliente**: il valore
+trasmesso è circa **un nono** di quello della transazione (€7.963 di fee contro €73.383
+di GMV netto sui 40 giorni).
+
+**La configurazione attuale è quella giusta e va mantenuta.** Tre ragioni, tutte
+verificabili sui dati dell'account.
+
+### 1. Il take rate non è costante, quindi GMV e fee non sono proporzionali
+
+| Campagna | Take rate | ROAS GMV | ROAS Fee |
+|---|---:|---:|---:|
+| PMAX \| ITALIA \| AMBULANZA | **8,7%** | **14,97×** | 1,30× |
+| PMAX \| PIEMONTE \| AMBULANZA | 14,0% | 4,39× | 0,61× |
+| SEARCH \| AMBULANZA \| PURCHASE \| ROMA | **17,7%** | 3,40× | 0,60× |
+| SEARCH \| AMBULANZA \| CHIAMATA \| VARESE 2 | **20,0%** | 0,53× | 0,11× |
+
+Il take rate varia dal 6,8% al 20,0% — un fattore tre. Sul GMV, Italia Ambulanza sembra
+**4,4 volte** più efficiente di Purchase Roma; sulla fee lo è **2,2 volte**. **Il GMV ne
+sovrastima il valore relativo del doppio**, e spingerebbe l'allocazione automatica verso
+le corse su cui Niino trattiene di meno.
+
+### 2. Con la fee il pareggio è 1,00× e non si può fraintendere
+
+Passando il GMV, il pareggio si sposterebbe a **tROAS 9,22×**. L'account oggi è a 3,82×
+sul GMV, cioè al **41% del pareggio** — ma un ROAS di 3,8× letto senza contesto sembra
+un successo. Con la fee, 0,41× contro una soglia di 1,00× non lascia margine di
+equivoco.
+
+### 3. La fee è il conto economico di Niino
+
+L'algoritmo massimizza ciò che gli si dà da massimizzare. Se gli si dà il transato,
+ottimizza il transato — che è il ricavo dei fornitori, non il vostro.
+
+### Cosa cambiare, però, su *quale* fee si passa
+
+| # | Correzione | Perché |
+|---|---|---|
+| **a** | **Passare la fee netta delle cancellazioni** | Il 25,4% delle corse viene cancellato: il valore trasmesso oggi sovrastima la fee reale di circa il **34%**. Si risolve con le rettifiche di conversione (retrattazione all'annullamento) |
+| **b** | **Aggiungere il GMV come azione secondaria, esclusa dalle offerte** | Dà la scala della piattaforma nei report senza entrare nel bidding |
+| **c** | **Correggere l'attribuzione della fee per campagna** | La copertura oscilla dal 20% al 183%: è un problema più grave della scelta fee/GMV |
+
+### Il problema più grande non è quale valore, ma quanti
+
+**L'account genera 1,41 conversioni a valore al giorno.** Nessuna strategia a valore
+impara con questo volume. La soluzione è una **scala di valori modellati sugli eventi
+intermedi**: valore atteso = fee media × probabilità che l'evento diventi corsa.
+
+| Evento | Eventi/giorno | P(prenotazione) | Valore modellato | Ruolo |
+|---|---:|---:|---:|---|
+| **Preventivo / bozza** | **43,7** | 14,18% | € 6,29 | segnale di volume |
+| Registrazione | 14,8 | 41,75% | € 18,52 | segnale intermedio |
+| **Prenotazione** | 6,2 | 100% | **€ 44,36** | verità economica |
+
+**Con la scala il segnale valorizzato passa da 6,2 a 43,7 eventi al giorno: sette volte
+tanto.** Regola per non falsare i conti: **una sola azione primaria per campagna** — la
+più profonda che abbia volume sufficiente — e tutte le altre come secondarie di sola
+osservazione.
+
+> Il valore che state passando è quello giusto, e passare al GMV sarebbe un errore. Va
+> reso netto delle cancellazioni, affiancato dal GMV in sola lettura, e accompagnato da
+> una scala di valori sugli eventi intermedi — perché il limite oggi non è la scelta
+> della metrica, è che le conversioni a valore sono 1,4 al giorno.
+
+---
+
 ## 7bis. Programma di A/B test sulle landing page
 
 ![Il funnel](img/g7_funnel.png)
