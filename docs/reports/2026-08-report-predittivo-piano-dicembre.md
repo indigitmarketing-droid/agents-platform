@@ -1,4 +1,4 @@
-# Report Predittivo e Piano di Crescita — 16 agosto → 31 dicembre 2026
+# Piano di Crescita verso 200 corse/giorno — 16 agosto → 31 dicembre 2026
 
 **Data di riferimento:** 15 agosto 2026
 **Orizzonte:** 138 giorni (16–31 agosto + settembre, ottobre, novembre, dicembre)
@@ -20,6 +20,54 @@ Su un orizzonte di 4 mesi e mezzo, inoltre, **una proiezione lineare non ha sens
 piano è costruito a fasi, ciascuna con una condizione di ingresso verificabile: se una
 fase non supera il proprio gate, si resta sulla precedente. Le proiezioni delle fasi 3–5
 sono **condizionate**, non previste.
+
+---
+
+## 1. Il target dichiarato: 200 corse al giorno
+
+| | Corse nette/giorno | Corse/anno |
+|---|---:|---:|
+| Oggi (run rate 1–9 agosto) | 5,78 | 2.110 |
+| Piano dicembre 2026 | 6,71 | 2.449 |
+| Target del business plan (192/mese) | 6,40 | 2.336 |
+| **Target dichiarato** | **200** | **73.000** |
+
+**Il target è 34,6 volte il livello attuale e 31 volte il target mensile del business
+plan**, che parla di 192 corse al mese. Le due cifre non sono in contraddizione: il BP è
+l'obiettivo operativo del 2026, le 200 al giorno sono l'obiettivo di scala dell'azienda.
+
+### Perché non può arrivare dall'advertising
+
+| CPA per corsa netta | Spesa/giorno | Spesa/mese |
+|---|---:|---:|
+| € 66,14 (piano, fase F0) | € 13.228 | € 396.840 |
+| € 56,73 (piano, dicembre) | € 11.346 | € 340.380 |
+| € 50,00 (ipotesi ottimistica) | € 10.000 | € 300.000 |
+| **Budget mensile del BP** | | **€ 13.529** |
+
+Servirebbero €300.000–400.000 al mese contro un budget di €13.529 — e la curva di
+saturazione mostra che la campagna migliore va in pareggio a €150/giorno. Al tasso di
+conversione attuale (0,427%) servirebbero inoltre **46.888 sessioni al giorno** contro
+le 1.454 di oggi.
+
+![Decomposizione per canale](img/g8_canali200.png)
+
+*Il 90% del target non è un problema di advertising.*
+
+| Canale | Corse/gg | Cosa serve |
+|---|---:|---|
+| **B2B e convenzioni** | **90** | Contratti ricorrenti con ospedali, cliniche, RSA, assicurazioni. Oggi vale 0,13 corse/giorno |
+| **Email / CRM su base attiva** | **70** | 25.000–35.000 clienti attivi con una corsa l'anno. Oggi il canale non esiste |
+| Paid — PMax + Search Purchase | 20 | Budget €1.000–1.200/giorno a CPA €50–60, con ticket ≥ €520 |
+| Organico, diretto, passaparola | 20 | Cresce con la notorietà e la base clienti |
+| **Totale** | **200** | |
+
+![Traiettoria pluriennale](img/g10_traiettoria.png)
+
+*A 2,5× l'anno il target è raggiungibile nel 2030.*
+
+**200 corse al giorno è un obiettivo a tre-quattro anni. Il traguardo di dicembre 2026
+su quella strada è 6,7 corse al giorno.**
 
 ---
 
@@ -375,6 +423,117 @@ Nei 9 giorni di agosto queste campagne hanno prodotto **€7,89/giorno di fee**.
 **Il reset dimezza le corse.** È il costo del piano, e va accettato consapevolmente: si
 recuperano a novembre (5,7/giorno) e si superano a dicembre (6,7/giorno), a un CPA
 sostenibile invece che a €98.
+
+---
+
+## 7bis. Programma di A/B test sulle landing page
+
+![Il funnel](img/g7_funnel.png)
+
+*Su 58.141 sessioni in 40 giorni, 54.002 se ne vanno senza esprimere alcun intento.*
+
+| Passaggio | Volume | Tasso | Lettura |
+|---|---:|---:|---|
+| Sessioni landing | 58.141 | — | |
+| **→ Intento CTA** | **4.139** | **7,12%** | Il collo di bottiglia: −54.002 sessioni |
+| → Preventivi e bozze | 1.749 | 42,26% | Sano |
+| → Registrazioni | 594 | 33,96% | Da verificare: la registrazione è obbligatoria? |
+| → Prenotazioni | 248 | 41,75% | Sano |
+| **Sessione → prenotazione** | **248** | **0,427%** | |
+
+**Il 92,88% delle sessioni non arriva a esprimere un intento.** Superato quel primo
+scalino il funnel funziona: 4 su 10 di chi chiede un preventivo poi prenota.
+
+### Cosa è statisticamente testabile
+
+| Metrica di decisione | Baseline | Lift | Durata | Verdetto |
+|---|---:|---:|---:|---|
+| **Sessione → intento CTA** | 7,12% | +20% | **8 giorni** | Testabile — metrica primaria |
+| **Sessione → intento CTA** | 7,12% | +15% | **13 giorni** | Testabile — metrica primaria |
+| CTA → bozza | 42,26% | +20% | 11 giorni | Testabile |
+| Bozza → registrazione | 33,96% | +15% | 64 giorni | Non testabile |
+| **Sessione → prenotazione** | **0,427%** | **+20%** | **139 giorni** | **Non testabile** |
+
+> La metrica di decisione è il tasso sessione → intento CTA. Le prenotazioni restano
+> metrica di guardia, non possono decidere un test.
+
+![Valore del programma](img/g9_abtest.png)
+
+| Tasso sessione → CTA | Prenotazioni/mese | Variazione | Fee aggiuntiva/mese |
+|---|---:|---:|---:|
+| 7,12% (oggi) | 186 | — | — |
+| 7,85% (+10%) | 205 | +19 | +€ 847 |
+| **8,55% (+20%)** | **223** | **+37** | **+€ 1.659** |
+| **9,25% (+30%)** | **242** | **+56** | **+€ 2.470** |
+| 10,68% (+50%) | 279 | +93 | +€ 4.128 |
+
+**+20% sul tasso di intento vale €1.659/mese a spesa invariata — più del margine
+previsto per l'intero mese di dicembre.**
+
+### Backlog dei test
+
+| # | Ipotesi | Variante | Metrica |
+|---|---|---|---|
+| 1 | L'offerta non è chiara nei primi 3 secondi | Hero con servizio + copertura + tempo di risposta | sessione → CTA |
+| 2 | Il prezzo assente genera abbandono | Fascia di prezzo indicativa in alto | sessione → CTA |
+| 3 | La CTA di chiamata non è visibile su mobile | Barra di chiamata fissa in fondo | sessione → CTA |
+| 4 | Manca la prova di affidabilità | Certificazioni, mezzi, personale, recensioni sopra la piega | sessione → CTA |
+| 5 | Il form di preventivo chiede troppo | 3 campi contro form completo | CTA → bozza |
+| 6 | La registrazione obbligatoria blocca il preventivo | Preventivo senza registrazione | CTA → bozza |
+| 7 | Landing indifferenziate per servizio | Landing dedicata ambulanza / lunga percorrenza / dimissioni | sessione → CTA |
+
+**Regole di esecuzione:** un test alla volta per famiglia di pagina; cicli di due
+settimane; nessuna decisione prima della fine del ciclo; traffico 50/50; prenotazioni
+come metrica di guardia (si scarta la variante se calano oltre il 15%); ricontrollo a
+quattro settimane sul dato di prenotazione.
+
+---
+
+## 7ter. Email marketing settimanale sui quattro cluster
+
+L'email è **l'unico canale con costo marginale prossimo a zero**, ed è il primo mattone
+delle 70 corse/giorno che il capitolo 1 assegna al CRM. **Con €44,36 di fee per corsa
+bastano 4 corse al mese per ripagare uno strumento da €150/mese.**
+
+| Cluster | Definizione | Cosa sappiamo dai 40 giorni |
+|---|---|---|
+| **VIP** | Clienti ricorrenti e ad alto valore | Dimensione ignota. Il GMV incassato (€148.218 a luglio) supera di molto il booked da ads: esiste una base non sfruttata |
+| **Un solo acquisto** | Hanno completato una corsa e non sono tornati | Le corse completate crescono di ~129/mese |
+| **Mai acquistato** | Registrati o con preventivo, nessuna corsa | 346 su 594 registrati (58,2%), +260/mese |
+| **Solo iscritti** | Registrati senza interazione d'acquisto | Registrazioni +446/mese, di cui 441 da Google |
+
+> Le dimensioni assolute delle liste non sono ricavabili dai report: i PDF Niino
+> riportano i flussi, non gli stock. Primo passo: estrarre da CRM la numerosità dei
+> quattro cluster e il tasso di riacquisto.
+
+### Calendario: una email a settimana per cluster
+
+| Cluster | Obiettivo | Sett. 1 | Sett. 2 | Sett. 3–4 | KPI |
+|---|---|---|---|---|---|
+| **VIP** | Frequenza | Prenotazione diretta con corsia preferenziale | Programmare i trasferimenti ricorrenti | Anteprima novità · referral | corse/mese |
+| **Un acquisto** | Seconda corsa | "Com'è andata" + incentivo | Casi d'uso non ancora provati | Promemoria stagionale · testimonianza | tasso di riacquisto |
+| **Mai acquistato** | Prima corsa | Le tre obiezioni sciolte | Trasparenza su prezzo e incluso | Prova sociale · preventivo in 2 minuti | preventivi avviati |
+| **Solo iscritti** | Attivazione | Come funziona in 3 passaggi | Quando serve un trasporto sanitario | Copertura geografica · primo preventivo | tasso di clic |
+
+**Due regole di frequenza:** chi è in più cluster riceve solo l'email del cluster più
+avanzato; chi ha una corsa in corso esce da tutte le sequenze promozionali.
+
+### L'A/B test dentro le email
+
+| Elemento | Cadenza | Nota |
+|---|---|---|
+| **Oggetto** | Ogni invio | È l'unico elemento con volume sufficiente per un test settimanale |
+| Chiamata all'azione | Una volta al mese per cluster | Prenota ora / Richiedi preventivo / Chiama |
+| Orario e giorno | Un ciclo completo, poi si fissa | Da non ritoccare dopo |
+| Lunghezza e struttura | Una volta per ciclo | Breve con un link contro lunga con più sezioni |
+
+**Sui cluster piccoli il test sull'oggetto non sarà quasi mai significativo:** con liste
+sotto i 500 contatti si decide accumulando quattro-sei invii sullo stesso pattern.
+
+**Misurazione:** il KPI è *corse generate*, non aperture; ogni invio porta un parametro
+di tracciamento fino alla prenotazione; dopo tre mesi va fatto un test di sospensione su
+un campione di controllo del 10% per misurare l'incremento reale; nessuna promozione sul
+prezzo nei primi tre mesi, perché lo sconto erode il ticket medio su cui poggia il piano.
 
 ---
 
